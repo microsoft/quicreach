@@ -73,13 +73,13 @@ jobs:
       run: cd build && cmake --install . --config Debug
     - name: quicreach outlook.office.com
       run: |
-        & 'C:/Program Files/msh3/lib/quicreach' outlook-evergreen.office.com
+        & 'C:/Program Files/quicreach/lib/quicreach' outlook-evergreen.office.com
     - name: quicreach www.cloudflare.com
       run: |
-        & 'C:/Program Files/msh3/lib/quicreach' www.cloudflare.com
+        & 'C:/Program Files/quicreach/lib/quicreach' www.cloudflare.com
     - name: quicreach www.google.com
       run: |
-        & 'C:/Program Files/msh3/lib/quicreach' www.google.com
+        & 'C:/Program Files/quicreach/lib/quicreach' www.google.com
   build-windows-schannel:
     permissions:
       contents: read
@@ -105,10 +105,10 @@ jobs:
       run: cd build && cmake --install . --config Debug
     - name: quicreach outlook.office.com
       run: |
-        & 'C:/Program Files/msh3/lib/quicreach' outlook-evergreen.office.com
+        & 'C:/Program Files/quicreach/lib/quicreach' outlook-evergreen.office.com
     - name: quicreach www.cloudflare.com
       run: |
-        & 'C:/Program Files/msh3/lib/quicreach' www.cloudflare.com
+        & 'C:/Program Files/quicreach/lib/quicreach' www.cloudflare.com
     - name: quicreach www.google.com
       run: |
-        & 'C:/Program Files/msh3/lib/quicreach' www.google.com
+        & 'C:/Program Files/quicreach/lib/quicreach' www.google.com
