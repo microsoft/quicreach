@@ -1,14 +1,28 @@
-# Project
+# QUIC Reach
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+This project has two primary purposes:
 
-As the maintainer of this project, please make a few updates:
+1. It provides a complete (C++) client sample application built on top of [MsQuic](https://github.com/microsoft/msquic).
+2. It is a tool to test the QUIC reachability of a server.
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+## Build
+
+```Bash
+git clone --recursive https://github.com/microsoft/quicreach
+cd quicreach && mkdir build && cd build
+```
+
+### Linux
+```Bash
+cmake -G 'Unix Makefiles' ..
+cmake --build .
+```
+
+### Windows
+```Bash
+cmake -G 'Visual Studio 17 2022' -A x64 ..
+cmake --build .
+```
 
 ## Contributing
 
@@ -26,8 +40,8 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 ## Trademarks
 
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
-trademarks or logos is subject to and must follow 
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
+trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.

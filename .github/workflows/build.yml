@@ -1,0 +1,90 @@
+name: Build
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+
+permissions: read-all
+
+jobs:
+  build-linux-openssl:
+    permissions:
+      contents: read
+    name: Build Linux (OpenSSL)
+    runs-on: ubuntu-latest
+    steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@9b0655f430fba8c7001d4e38f8d4306db5c6e0ab
+      with:
+        egress-policy: audit
+    - name: Checkout repository
+      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      with:
+        submodules: 'recursive'
+    - name: Generate
+      run: mkdir build && cd build && cmake -G 'Unix Makefiles' ..
+    - name: Build
+      run: cd build && cmake --build .
+    - name: Upload
+      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      with:
+        name: bin-linux-openssl
+        path: |
+          build/**/*.so
+          build/**/quicreach
+    - name: Install
+      run: cd build && sudo cmake --install . --config Debug
+  build-windows-openssl:
+    permissions:
+      contents: read
+    name: Build Windows (OpenSSL)
+    runs-on: windows-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      with:
+        submodules: 'recursive'
+    - name: Install Perl
+      uses: shogo82148/actions-setup-perl@v1.14.2
+      with:
+        perl-version: '5.34'
+    - name: Install NASM
+      uses: ilammy/setup-nasm@v1.2.1
+    - name: Generate
+      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_TLS=openssl ..
+    - name: Build
+      run: cd build && cmake --build .
+    - name: Upload
+      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      with:
+        name: bin-windows-openssl
+        path: |
+          build/**/*.dll
+          build/**/quicreach.exe
+    - name: Install
+      run: cd build && cmake --install . --config Debug
+  build-windows-schannel:
+    permissions:
+      contents: read
+    name: Build Windows (Schannel)
+    runs-on: windows-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      with:
+        submodules: 'recursive'
+    - name: Generate
+      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 ..
+    - name: Build
+      run: cd build && cmake --build .
+    - name: Upload
+      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      with:
+        name: bin-windows-schannel
+        path: |
+          build/**/*.dll
+          build/**/quicreach.exe
+    - name: Install
+      run: cd build && cmake --install . --config Debug
