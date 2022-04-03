@@ -28,4 +28,4 @@ jobs:
     - name: Install
       run: cd build && sudo cmake --install . --config Debug
     - name: quicreach *
-      run: /usr/local/lib/quicreach *
+      run: /usr/local/lib/quicreach '*'
