@@ -1,0 +1,31 @@
+name: Reach
+
+on:
+  push:
+    branches: main
+
+permissions: read-all
+
+jobs:
+  reach-linux-openssl:
+    permissions:
+      contents: read
+    name: Top 1000 Reachability Test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@9b0655f430fba8c7001d4e38f8d4306db5c6e0ab
+      with:
+        egress-policy: audit
+    - name: Checkout repository
+      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      with:
+        submodules: 'recursive'
+    - name: Generate
+      run: mkdir build && cd build && cmake -G 'Unix Makefiles' ..
+    - name: Build
+      run: cd build && cmake --build .
+    - name: Install
+      run: cd build && sudo cmake --install . --config Debug
+    - name: quicreach *
+      run: /usr/local/lib/quicreach *
