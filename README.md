@@ -1,5 +1,8 @@
 # QUIC Reach
 
+[![Build](https://github.com/microsoft/quicreach/actions/workflows/build.yml/badge.svg)](https://github.com/microsoft/quicreach/actions/workflows/build.yml)
+[![Reach](https://github.com/microsoft/quicreach/actions/workflows/reach.yml/badge.svg)](https://github.com/microsoft/quicreach/actions/workflows/reach.yml)
+
 This project has two primary purposes:
 
 1. It provides a complete (C++) client sample application built on top of [MsQuic](https://github.com/microsoft/msquic).
