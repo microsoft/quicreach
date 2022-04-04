@@ -24,20 +24,27 @@ using namespace std;
 const MsQuicApi* MsQuic;
 
 struct ReachConfig {
+    bool PrintStatistics {false};
     std::vector<const char*> HostNames;
     uint16_t Port {443};
     MsQuicAlpn Alpn {"h3"};
     MsQuicSettings Settings;
     QUIC_CREDENTIAL_FLAGS CredFlags {QUIC_CREDENTIAL_FLAG_CLIENT};
     ReachConfig() {
-        Settings.SetHandshakeIdleTimeoutMs(1000);
+        Settings.SetHandshakeIdleTimeoutMs(750);
         Settings.SetPeerUnidiStreamCount(3);
     }
 };
 
 bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
-    if (argc < 2 || (!strcmp(argv[1], "?") || !strcmp(argv[1], "help"))) {
-        printf("Usage: quicreach <hostname(s)> [options]\n");
+    if (argc < 2 || !strcmp(argv[1], "-?") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
+        printf("usage: quicreach <hostname(s)> [options...]\n"
+               " -a, --alpn         The ALPN to use for the handshake (def=h3)\n"
+               " -h, --help         Prints this help text\n"
+               " -p, --port         The default UDP port to use\n"
+               " -s, --stats        Print connection statistics\n"
+               " -u, --unsecure     Allows unsecure connections\n"
+              );
         return false;
     }
 
@@ -55,6 +62,21 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
             if (!End) break;
             HostName = End + 1;
         } while (true);
+    }
+
+    // Parse options.
+    for (int i = 2; i < argc; ++i) {
+        if (!strcmp(argv[i], "--alpn") || !strcmp(argv[i], "-a")) {
+            if (++i >= argc) { printf("Missing ALPN string\n"); return false; }
+            Config.Alpn = argv[i];
+        } else if (!strcmp(argv[i], "--port") || !strcmp(argv[i], "-p")) {
+            if (++i >= argc) { printf("Missing port number\n"); return false; }
+            Config.Port = (uint16_t)atoi(argv[i]);
+        } else if (!strcmp(argv[i], "--stats") || !strcmp(argv[i], "-s")) {
+            Config.PrintStatistics = true;
+        } else if (!strcmp(argv[i], "--unsecure") || !strcmp(argv[i], "-u")) {
+            Config.CredFlags |= QUIC_CREDENTIAL_FLAG_NO_CERTIFICATE_VALIDATION;
+        }
     }
 
     return true;
@@ -101,10 +123,12 @@ bool TestReachability(const ReachConfig& Config) {
     MsQuicConfiguration Configuration(Registration, Config.Alpn, Config.Settings, MsQuicCredentialConfig(Config.CredFlags));
     if (!Configuration.IsValid()) { printf("Configuration initializtion failed!\n"); return false; }
 
-    printf("%30s          TIME           RTT    SEND:RECV           STATS\n", "SERVER");
+    if (Config.PrintStatistics)
+        printf("%30s          TIME           RTT    SEND:RECV           STATS\n", "SERVER");
+
     uint32_t ReachableCount = 0;
     for (auto HostName : Config.HostNames) {
-        printf("%30s", HostName);
+        if (Config.PrintStatistics) printf("%30s", HostName);
         ReachConnection Connection(Registration);
         if (!Connection.IsValid()) { printf("Connection initializtion failed!\n"); return false; }
         if (QUIC_FAILED(Connection.Start(Configuration, HostName, Config.Port))) {
@@ -115,19 +139,21 @@ bool TestReachability(const ReachConfig& Config) {
         if (Connection.HandshakeSuccess) {
             auto Time = (uint32_t)(Connection.Stats.TimingHandshakeFlightEnd - Connection.Stats.TimingStart);
             auto Amplication = (double)Connection.Stats.RecvTotalBytes / (double)Connection.Stats.SendTotalBytes;
-            printf("    %3u.%03u ms    %3u.%03u ms    %u:%u (%2.1fx)    %u RX CRYPTO",
-                Time / 1000, Time % 1000,
-                Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
-                (uint32_t)Connection.Stats.SendTotalBytes,
-                (uint32_t)Connection.Stats.RecvTotalBytes,
-                Amplication,
-                Connection.Stats.HandshakeServerFlight1Bytes);
+            if (Config.PrintStatistics)
+                printf("    %3u.%03u ms    %3u.%03u ms    %u:%u (%2.1fx)    %u RX CRYPTO",
+                        Time / 1000, Time % 1000,
+                        Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
+                        (uint32_t)Connection.Stats.SendTotalBytes,
+                        (uint32_t)Connection.Stats.RecvTotalBytes,
+                        Amplication,
+                        Connection.Stats.HandshakeServerFlight1Bytes);
             ++ReachableCount;
         }
-        printf("\n");
+        if (Config.PrintStatistics) printf("\n");
     }
 
-    if (ReachableCount > 1) printf("\n%u domains reachable\n", ReachableCount);
+    if (Config.PrintStatistics && ReachableCount > 1)
+        printf("\n%u domains reachable\n", ReachableCount);
     return ReachableCount != 0;
 }
 
@@ -143,6 +169,9 @@ int QUIC_CALL main(int argc, char **argv) {
     }
 
     bool Result = TestReachability(Config);
+    if (!Config.PrintStatistics) {
+        printf("%s\n", Result ? "Success" : "Failure");
+    }
     delete MsQuic;
     return Result ? 0 : 1;
 }
