@@ -11,7 +11,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <msquic.hpp>
-#include "top_domains.h"
+#include "domains.hpp"
 
 #ifdef _WIN32
 #define QUIC_CALL __cdecl
