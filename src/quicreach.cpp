@@ -64,7 +64,7 @@ bool TestReachability(const ReachConfig& Config) {
     MsQuicConfiguration Configuration(Registration, Config.Alpn, Config.Settings, MsQuicCredentialConfig(Config.CredFlags));
     if (!Configuration.IsValid()) { printf("Configuration initializtion failed!\n"); return false; }
 
-    uint32_t ReachableCount = 0;
+    uint32_t ReachableCount = 0, UnreachableCount = 0;
     for (auto HostName : Config.HostNames) {
         MsQuicConnection Connection(Registration);
         if (!Connection.IsValid()) { printf("Connection initializtion failed!\n"); return false; }
@@ -78,13 +78,23 @@ bool TestReachability(const ReachConfig& Config) {
             ++tries;
         } while (!Connection.HandshakeComplete && tries < 50);
 
-        printf("%30s\t\t%s\n", HostName, Connection.HandshakeComplete ? "reachable" : "");
-        if (Connection.HandshakeComplete) ++ReachableCount;
+        if (Connection.HandshakeComplete) {
+            QUIC_STATISTICS_V2 Stats;
+            Connection.GetStatistics(&Stats);
+            printf("%26s\treachable\t%3u.%03u ms RTT\t  %u bytes\n",
+                HostName,
+                Stats.Rtt / 1000, Stats.Rtt % 1000,
+                Stats.HandshakeServerFlight1Bytes);
+            ++ReachableCount;
+        } else {
+            printf("%26s\n", HostName);
+            ++UnreachableCount;
+        }
     }
 
     if (ReachableCount > 1) printf("\n%u domains reachable\n", ReachableCount);
 
-    return true;
+    return UnreachableCount == 0;
 }
 
 int QUIC_CALL main(int argc, char **argv) {
