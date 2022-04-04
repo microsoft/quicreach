@@ -158,7 +158,7 @@ bool TestReachability(const ReachConfig& Config) {
 
     if (Config.PrintStatistics && ReachableCount > 1)
         printf("\n%u domains reachable\n", ReachableCount);
-    return Config.RequireAll ? ((size_t)ReachableCount == Config.HostNames.size()) || (ReachableCount != 0);
+    return Config.RequireAll ? ((size_t)ReachableCount == Config.HostNames.size()) : (ReachableCount != 0);
 }
 
 int QUIC_CALL main(int argc, char **argv) {
