@@ -5,12 +5,12 @@
 
 --*/
 
-#include <msquic.hpp>
 #include <stdio.h>
 #include <thread>
 #include <vector>
 #include <mutex>
 #include <condition_variable>
+#include <msquic.hpp>
 #include "top_domains.h"
 
 #ifdef _WIN32
@@ -41,7 +41,7 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
         printf("usage: quicreach <hostname(s)> [options...]\n"
                " -a, --alpn         The ALPN to use for the handshake (def=h3)\n"
                " -h, --help         Prints this help text\n"
-               " -p, --port         The default UDP port to use\n"
+               " -p, --port <port>  The default UDP port to use\n"
                " -s, --stats        Print connection statistics\n"
                " -u, --unsecure     Allows unsecure connections\n"
               );

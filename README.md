@@ -34,7 +34,7 @@ cmake --build .
 usage: quicreach <hostname(s)> [options...]
  -a, --alpn         The ALPN to use for the handshake (def=h3)
  -h, --help         Prints this help text
- -p, --port         The default UDP port to use
+ -p, --port <port>  The default UDP port to use
  -s, --stats        Print connection statistics
  -u, --unsecure     Allows unsecure connections
 ```
