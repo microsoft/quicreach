@@ -40,18 +40,20 @@ jobs:
     - name: Install NASM
       if: runner.os == 'Windows'
       uses: ilammy/setup-nasm@10788e307d96af7013172d66126322c70b22efb9
-    - name: Generate (Linux)
-      if: runner.os == 'Linux'
-      run: mkdir build && cd build && cmake -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=RelWithDebInfo -DQUIC_TLS=${{ matrix.tls }} -DQUIC_BUILD_SHARED=${{ matrix.shared }} ..
-    - name: Generate (Windows)
-      if: runner.os == 'Windows'
-      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_TLS=${{ matrix.tls }} -DQUIC_BUILD_SHARED=${{ matrix.shared }} ..
     - name: Build (Linux)
       if: runner.os == 'Linux'
-      run: cd build && cmake --build .
+      run: |
+        mkdir build && cd build
+        cmake -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=RelWithDebInfo -DQUIC_TLS=${{ matrix.tls }} -DQUIC_BUILD_SHARED=${{ matrix.shared }} ..
+        cmake --build .
+        sudo cmake --install . --config Release
     - name: Build (Windows)
       if: runner.os == 'Windows'
-      run: cd build && cmake --build . --config Release
+      run: |
+        mkdir build && cd build
+        cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_TLS=${{ matrix.tls }} -DQUIC_BUILD_SHARED=${{ matrix.shared }} ..
+        cmake --build . --config Release
+        cmake --install . --config Release
     - name: Upload
       uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
       with:
@@ -61,8 +63,6 @@ jobs:
           build/**/*.dll
           build/**/quicreach
           build/**/quicreach.exe
-    - name: Install
-      run: cd build && sudo cmake --install . --config Release
     - name: Test (Linux)
       if: runner.os == 'Linux'
       run: /usr/local/lib/quicreach outlook-evergreen.office.com,www.cloudflare.com,www.google.com --req-all --stats
