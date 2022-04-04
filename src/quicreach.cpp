@@ -9,7 +9,8 @@
 #include <stdio.h>
 #include <thread>
 #include <vector>
-
+#include <mutex>
+#include <condition_variable>
 #include "top_domains.h"
 
 #ifdef _WIN32
@@ -30,6 +31,7 @@ struct ReachConfig {
     QUIC_CREDENTIAL_FLAGS CredFlags {QUIC_CREDENTIAL_FLAG_CLIENT};
 
     ReachConfig() {
+        Settings.SetHandshakeIdleTimeoutMs(1000);
         Settings.SetPeerUnidiStreamCount(3);
     }
 };
@@ -59,32 +61,74 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
     return true;
 }
 
+struct ReachConnection : public MsQuicConnection {
+    mutex HandshakeCompleteMutex;
+    condition_variable HandshakeCompleteEvent;
+    bool HandshakeSuccess {false};
+    QUIC_STATISTICS_V2 Stats {0};
+    ReachConnection(
+        _In_ const MsQuicRegistration& Registration
+    ) : MsQuicConnection(Registration, CleanUpManual, Callback) { }
+    void WaitOnHandshakeComplete() {
+        std::unique_lock Lock{HandshakeCompleteMutex};
+        HandshakeCompleteEvent.wait_for(Lock, chrono::seconds(1), [&]{return HandshakeComplete;});
+    }
+    void SetHandshakeComplete() {
+        std::lock_guard Lock{HandshakeCompleteMutex};
+        HandshakeComplete = true;
+        HandshakeCompleteEvent.notify_all();
+    }
+    static QUIC_STATUS QUIC_API Callback(
+        _In_ MsQuicConnection* _Connection,
+        _In_opt_ void* ,
+        _Inout_ QUIC_CONNECTION_EVENT* Event
+        ) noexcept {
+        auto Connection = (ReachConnection*)_Connection;
+        if (Event->Type == QUIC_CONNECTION_EVENT_CONNECTED) {
+            Connection->HandshakeSuccess = true;
+            Connection->GetStatistics(&Connection->Stats);
+            Connection->SetHandshakeComplete();
+        } else if (Event->Type == QUIC_CONNECTION_EVENT_CONNECTED) {
+            Connection->SetHandshakeComplete();
+        } else if (Event->Type == QUIC_CONNECTION_EVENT_PEER_STREAM_STARTED) {
+            //
+            // Not great beacuse it doesn't provide an application specific
+            // error code. If you expect to get streams, you should not no-op
+            // the callbacks.
+            //
+            MsQuic->StreamClose(Event->PEER_STREAM_STARTED.Stream);
+        }
+        return QUIC_STATUS_SUCCESS;
+    }
+};
+
 bool TestReachability(const ReachConfig& Config) {
     MsQuicRegistration Registration("quicreach");
     MsQuicConfiguration Configuration(Registration, Config.Alpn, Config.Settings, MsQuicCredentialConfig(Config.CredFlags));
     if (!Configuration.IsValid()) { printf("Configuration initializtion failed!\n"); return false; }
 
+    printf("%26s          TIME           RTT    SEND:RECV           STATS\n", "SERVER");
+
     uint32_t ReachableCount = 0, UnreachableCount = 0;
     for (auto HostName : Config.HostNames) {
-        MsQuicConnection Connection(Registration);
+        ReachConnection Connection(Registration);
         if (!Connection.IsValid()) { printf("Connection initializtion failed!\n"); return false; }
         if (QUIC_FAILED(Connection.Start(Configuration, HostName, Config.Port))) {
             printf("Connection start failed!\n"); return false;
         }
 
-        uint32_t tries = 0;
-        do {
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
-            ++tries;
-        } while (!Connection.HandshakeComplete && tries < 50);
-
-        if (Connection.HandshakeComplete) {
-            QUIC_STATISTICS_V2 Stats;
-            Connection.GetStatistics(&Stats);
-            printf("%26s\treachable\t%3u.%03u ms RTT\t  %u bytes\n",
+        Connection.WaitOnHandshakeComplete();
+        if (Connection.HandshakeSuccess) {
+            auto Time = (uint32_t)(Connection.Stats.TimingHandshakeFlightEnd - Connection.Stats.TimingStart);
+            printf("%26s    %3u.%03u ms    %3u.%03u ms    %llu:%llu (%u.%1ux)    %u RX CRYPTO\n",
                 HostName,
-                Stats.Rtt / 1000, Stats.Rtt % 1000,
-                Stats.HandshakeServerFlight1Bytes);
+                Time / 1000, Time % 1000,
+                Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
+                Connection.Stats.SendTotalBytes,
+                Connection.Stats.RecvTotalBytes,
+                (uint32_t)(Connection.Stats.RecvTotalBytes / Connection.Stats.SendTotalBytes),
+                (uint32_t)((Connection.Stats.RecvTotalBytes % Connection.Stats.SendTotalBytes) / 100),
+                Connection.Stats.HandshakeServerFlight1Bytes);
             ++ReachableCount;
         } else {
             printf("%26s\n", HostName);
@@ -94,7 +138,7 @@ bool TestReachability(const ReachConfig& Config) {
 
     if (ReachableCount > 1) printf("\n%u domains reachable\n", ReachableCount);
 
-    return UnreachableCount == 0;
+    return ReachableCount != 0;
 }
 
 int QUIC_CALL main(int argc, char **argv) {
