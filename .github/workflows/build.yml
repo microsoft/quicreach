@@ -42,6 +42,38 @@ jobs:
       run: /usr/local/lib/quicreach www.cloudflare.com
     - name: quicreach www.google.com
       run: /usr/local/lib/quicreach www.google.com
+  build-linux-openssl-static:
+    permissions:
+      contents: read
+    name: Build Linux (OpenSSL) Static
+    runs-on: ubuntu-latest
+    steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@9b0655f430fba8c7001d4e38f8d4306db5c6e0ab
+      with:
+        egress-policy: audit
+    - name: Checkout repository
+      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      with:
+        submodules: 'recursive'
+    - name: Generate
+      run: mkdir build && cd build && cmake -G 'Unix Makefiles' -DQUIC_BUILD_SHARED=off ..
+    - name: Build
+      run: cd build && cmake --build .
+    - name: Upload
+      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      with:
+        name: bin-linux-openssl-static
+        path: |
+          build/**/quicreach
+    - name: Install
+      run: cd build && sudo cmake --install . --config Debug
+    - name: quicreach outlook-evergreen.office.com
+      run: /usr/local/lib/quicreach outlook-evergreen.office.com
+    - name: quicreach www.cloudflare.com
+      run: /usr/local/lib/quicreach www.cloudflare.com
+    - name: quicreach www.google.com
+      run: /usr/local/lib/quicreach www.google.com
   build-windows-openssl:
     permissions:
       contents: read
@@ -68,6 +100,43 @@ jobs:
         name: bin-windows-openssl
         path: |
           build/**/*.dll
+          build/**/quicreach.exe
+    - name: Install
+      run: cd build && cmake --install . --config Debug
+    - name: quicreach outlook.office.com
+      run: |
+        & 'C:/Program Files/quicreach/lib/quicreach' outlook-evergreen.office.com
+    - name: quicreach www.cloudflare.com
+      run: |
+        & 'C:/Program Files/quicreach/lib/quicreach' www.cloudflare.com
+    - name: quicreach www.google.com
+      run: |
+        & 'C:/Program Files/quicreach/lib/quicreach' www.google.com
+  build-windows-openssl-static:
+    permissions:
+      contents: read
+    name: Build Windows (OpenSSL) Static
+    runs-on: windows-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      with:
+        submodules: 'recursive'
+    - name: Install Perl
+      uses: shogo82148/actions-setup-perl@v1.15.1
+      with:
+        perl-version: '5.34'
+    - name: Install NASM
+      uses: ilammy/setup-nasm@v1.2.1
+    - name: Generate
+      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_BUILD_SHARED=off -DQUIC_TLS=openssl ..
+    - name: Build
+      run: cd build && cmake --build .
+    - name: Upload
+      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      with:
+        name: bin-windows-openssl
+        path: |
           build/**/quicreach.exe
     - name: Install
       run: cd build && cmake --install . --config Debug
@@ -112,3 +181,35 @@ jobs:
     - name: quicreach www.google.com
       run: |
         & 'C:/Program Files/quicreach/lib/quicreach' www.google.com
+  build-windows-schannel-static:
+    permissions:
+      contents: read
+    name: Build Windows (Schannel) Static
+    runs-on: windows-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      with:
+        submodules: 'recursive'
+    - name: Generate
+      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_BUILD_SHARED=off ..
+    - name: Build
+      run: cd build && cmake --build .
+    - name: Upload
+      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      with:
+        name: bin-windows-schannel
+        path: |
+          build/**/quicreach.exe
+    - name: Install
+      run: cd build && cmake --install . --config Debug
+    - name: quicreach outlook.office.com
+      run: |
+        & 'C:/Program Files/quicreach/lib/quicreach' outlook-evergreen.office.com
+    - name: quicreach www.cloudflare.com
+      run: |
+        & 'C:/Program Files/quicreach/lib/quicreach' www.cloudflare.com
+    - name: quicreach www.google.com
+      run: |
+        & 'C:/Program Files/quicreach/lib/quicreach' www.google.com
+
