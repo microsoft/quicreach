@@ -16,7 +16,7 @@ jobs:
         tls: [schannel, openssl]
         shared: [on, off]
         exclude:
-        - os: ubuntu-latest
+        - os: ubuntu
           tls: schannel
     permissions:
       contents: read
