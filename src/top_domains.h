@@ -3,12 +3,30 @@
     Copyright (c) Microsoft Corporation.
     Licensed under the MIT License.
 
-    Old list found on GitHub at https://gist.github.com/jgamblin/62fadd8aa321f7f6a482912a6a317ea3
-
 --*/
 
 const char* TopDomains[] =
 {
+    // Known interop servers
+    "quic.aiortc.org",
+    "ietf.akaquic.com",
+    "quic.ogre.com",
+    "quic.rocks",
+    "mew.org",
+    "http3-test.litespeedtech.com",
+    "msquic.net",
+    "nghttp2.org",
+    "cloudflare-quic.com",
+    "pandora.cm.in.tum.de",
+    "test.privateoctopus.com",
+    "quant.eggert.org",
+    "h3.stammw.eu",
+    "quic.seemann.io",
+    "quic.tech",
+    "quicker.edm.uhasselt.be",
+    "quic.examp1e.net",
+    "h2o.examp1e.net",
+    // Top-level domains - found on GitHub at https://gist.github.com/jgamblin/62fadd8aa321f7f6a482912a6a317ea3
     "google.com",
     "youtube.com",
     "facebook.com",

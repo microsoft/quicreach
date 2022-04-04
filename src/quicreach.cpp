@@ -29,7 +29,6 @@ struct ReachConfig {
     MsQuicAlpn Alpn {"h3"};
     MsQuicSettings Settings;
     QUIC_CREDENTIAL_FLAGS CredFlags {QUIC_CREDENTIAL_FLAG_CLIENT};
-
     ReachConfig() {
         Settings.SetHandshakeIdleTimeoutMs(1000);
         Settings.SetPeerUnidiStreamCount(3);
@@ -88,15 +87,10 @@ struct ReachConnection : public MsQuicConnection {
             Connection->HandshakeSuccess = true;
             Connection->GetStatistics(&Connection->Stats);
             Connection->SetHandshakeComplete();
-        } else if (Event->Type == QUIC_CONNECTION_EVENT_CONNECTED) {
+        } else if (Event->Type == QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE) {
             Connection->SetHandshakeComplete();
         } else if (Event->Type == QUIC_CONNECTION_EVENT_PEER_STREAM_STARTED) {
-            //
-            // Not great beacuse it doesn't provide an application specific
-            // error code. If you expect to get streams, you should not no-op
-            // the callbacks.
-            //
-            MsQuic->StreamClose(Event->PEER_STREAM_STARTED.Stream);
+            MsQuic->StreamClose(Event->PEER_STREAM_STARTED.Stream); // Shouldn't do this
         }
         return QUIC_STATUS_SUCCESS;
     }
@@ -107,10 +101,10 @@ bool TestReachability(const ReachConfig& Config) {
     MsQuicConfiguration Configuration(Registration, Config.Alpn, Config.Settings, MsQuicCredentialConfig(Config.CredFlags));
     if (!Configuration.IsValid()) { printf("Configuration initializtion failed!\n"); return false; }
 
-    printf("%26s          TIME           RTT    SEND:RECV           STATS\n", "SERVER");
-
-    uint32_t ReachableCount = 0, UnreachableCount = 0;
+    printf("%30s          TIME           RTT    SEND:RECV           STATS\n", "SERVER");
+    uint32_t ReachableCount = 0;
     for (auto HostName : Config.HostNames) {
+        printf("%30s", HostName);
         ReachConnection Connection(Registration);
         if (!Connection.IsValid()) { printf("Connection initializtion failed!\n"); return false; }
         if (QUIC_FAILED(Connection.Start(Configuration, HostName, Config.Port))) {
@@ -121,8 +115,7 @@ bool TestReachability(const ReachConfig& Config) {
         if (Connection.HandshakeSuccess) {
             auto Time = (uint32_t)(Connection.Stats.TimingHandshakeFlightEnd - Connection.Stats.TimingStart);
             auto Amplication = (double)Connection.Stats.RecvTotalBytes / (double)Connection.Stats.SendTotalBytes;
-            printf("%26s    %3u.%03u ms    %3u.%03u ms    %u:%u (%2.1fx)    %u RX CRYPTO\n",
-                HostName,
+            printf("    %3u.%03u ms    %3u.%03u ms    %u:%u (%2.1fx)    %u RX CRYPTO",
                 Time / 1000, Time % 1000,
                 Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
                 (uint32_t)Connection.Stats.SendTotalBytes,
@@ -130,32 +123,26 @@ bool TestReachability(const ReachConfig& Config) {
                 Amplication,
                 Connection.Stats.HandshakeServerFlight1Bytes);
             ++ReachableCount;
-        } else {
-            printf("%26s\n", HostName);
-            ++UnreachableCount;
         }
+        printf("\n");
     }
 
     if (ReachableCount > 1) printf("\n%u domains reachable\n", ReachableCount);
-
     return ReachableCount != 0;
 }
 
 int QUIC_CALL main(int argc, char **argv) {
 
     ReachConfig Config;
-    if (!ParseConfig(argc, argv, Config)) {
-        return 1;
-    }
+    if (!ParseConfig(argc, argv, Config)) return 1;
 
     MsQuic = new (std::nothrow) MsQuicApi();
-    if (!MsQuic || QUIC_FAILED(MsQuic->GetInitStatus())) {
+    if (QUIC_FAILED(MsQuic->GetInitStatus())) {
         printf("MsQuicApi failed, 0x%x\n", MsQuic->GetInitStatus());
         return 1;
     }
 
     bool Result = TestReachability(Config);
-
     delete MsQuic;
     return Result ? 0 : 1;
 }
