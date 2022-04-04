@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 project(quicreach)
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.16) # 3.20 for non-shared libs
 
 # Use, i.e. don't skip the full RPATH for the build tree.
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
@@ -28,5 +28,5 @@ set(CMAKE_BUILD_TYPE "Release")
 add_subdirectory(msquic)
 target_compile_features(inc INTERFACE cxx_std_20)
 
-# Build mquicreach source.
+# Build quicreach source.
 add_subdirectory(src)
