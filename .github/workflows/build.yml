@@ -53,11 +53,11 @@ jobs:
       with:
         submodules: 'recursive'
     - name: Install Perl
-      uses: shogo82148/actions-setup-perl@v1.15.1
+      uses: shogo82148/actions-setup-perl@20a7fcafc28850ff808cc2fa81e688fca4b3b47c
       with:
         perl-version: '5.34'
     - name: Install NASM
-      uses: ilammy/setup-nasm@v1.2.1
+      uses: ilammy/setup-nasm@10788e307d96af7013172d66126322c70b22efb9
     - name: Generate
       run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_TLS=openssl ..
     - name: Build
