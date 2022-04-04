@@ -120,14 +120,14 @@ bool TestReachability(const ReachConfig& Config) {
         Connection.WaitOnHandshakeComplete();
         if (Connection.HandshakeSuccess) {
             auto Time = (uint32_t)(Connection.Stats.TimingHandshakeFlightEnd - Connection.Stats.TimingStart);
-            printf("%26s    %3u.%03u ms    %3u.%03u ms    %llu:%llu (%u.%1ux)    %u RX CRYPTO\n",
+            auto Amplication = (double)Connection.Stats.RecvTotalBytes / (double)Connection.Stats.SendTotalBytes;
+            printf("%26s    %3u.%03u ms    %3u.%03u ms    %u:%u (%2.1fx)    %u RX CRYPTO\n",
                 HostName,
                 Time / 1000, Time % 1000,
                 Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
-                Connection.Stats.SendTotalBytes,
-                Connection.Stats.RecvTotalBytes,
-                (uint32_t)(Connection.Stats.RecvTotalBytes / Connection.Stats.SendTotalBytes),
-                (uint32_t)((Connection.Stats.RecvTotalBytes % Connection.Stats.SendTotalBytes) / 100),
+                (uint32_t)Connection.Stats.SendTotalBytes,
+                (uint32_t)Connection.Stats.RecvTotalBytes,
+                Amplication,
                 Connection.Stats.HandshakeServerFlight1Bytes);
             ++ReachableCount;
         } else {
