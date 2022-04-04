@@ -44,7 +44,7 @@ jobs:
       run: mkdir build && cd build && cmake -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=RelWithDebInfo -DQUIC_TLS=${{ matrix.tls }} -DQUIC_BUILD_SHARED=${{ matrix.shared }} ..
     - name: Generate (Windows)
       if: runner.os == 'Windows'
-      run: mkdir build && cd build && cmake -G Visual Studio 17 2022' -A x64 -DQUIC_TLS=${{ matrix.tls }} -DQUIC_BUILD_SHARED=${{ matrix.shared }} ..
+      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_TLS=${{ matrix.tls }} -DQUIC_BUILD_SHARED=${{ matrix.shared }} ..
     - name: Build (Linux)
       if: runner.os == 'Linux'
       run: cd build && cmake --build .
