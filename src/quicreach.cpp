@@ -25,6 +25,7 @@ const MsQuicApi* MsQuic;
 
 struct ReachConfig {
     bool PrintStatistics {false};
+    bool RequireAll {false};
     std::vector<const char*> HostNames;
     uint16_t Port {443};
     MsQuicAlpn Alpn {"h3"};
@@ -42,6 +43,7 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
                " -a, --alpn         The ALPN to use for the handshake (def=h3)\n"
                " -h, --help         Prints this help text\n"
                " -p, --port <port>  The default UDP port to use\n"
+               " -r, --req-all      Require all hostnames to suceed\n"
                " -s, --stats        Print connection statistics\n"
                " -u, --unsecure     Allows unsecure connections\n"
               );
@@ -74,6 +76,8 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
             Config.Port = (uint16_t)atoi(argv[i]);
         } else if (!strcmp(argv[i], "--stats") || !strcmp(argv[i], "-s")) {
             Config.PrintStatistics = true;
+        } else if (!strcmp(argv[i], "--req-all") || !strcmp(argv[i], "-r")) {
+            Config.RequireAll = true;
         } else if (!strcmp(argv[i], "--unsecure") || !strcmp(argv[i], "-u")) {
             Config.CredFlags |= QUIC_CREDENTIAL_FLAG_NO_CERTIFICATE_VALIDATION;
         }
@@ -154,7 +158,7 @@ bool TestReachability(const ReachConfig& Config) {
 
     if (Config.PrintStatistics && ReachableCount > 1)
         printf("\n%u domains reachable\n", ReachableCount);
-    return ReachableCount != 0;
+    return Config.RequireAll ? ((size_t)ReachableCount == Config.HostNames.size()) || (ReachableCount != 0);
 }
 
 int QUIC_CALL main(int argc, char **argv) {

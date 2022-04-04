@@ -9,11 +9,19 @@ on:
 permissions: read-all
 
 jobs:
-  build-linux-openssl:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu, windows]
+        tls: [schannel, openssl]
+        shared: [on, off]
+        exclude:
+        - os: ubuntu-latest
+          tls: schannel
     permissions:
       contents: read
-    name: Build Linux (OpenSSL)
-    runs-on: ubuntu-latest
+    name: Build
+    runs-on: ${{ matrix.os }}-latest
     steps:
     - name: Harden Runner
       uses: step-security/harden-runner@9b0655f430fba8c7001d4e38f8d4306db5c6e0ab
@@ -23,193 +31,41 @@ jobs:
       uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
       with:
         submodules: 'recursive'
-    - name: Generate
-      run: mkdir build && cd build && cmake -G 'Unix Makefiles' ..
-    - name: Build
+    - name: Install Perl
+      if: runner.os == 'Windows'
+      uses: shogo82148/actions-setup-perl@20a7fcafc28850ff808cc2fa81e688fca4b3b47c
+      with:
+        perl-version: '5.34'
+    - name: Install NASM
+      if: runner.os == 'Windows'
+      uses: ilammy/setup-nasm@10788e307d96af7013172d66126322c70b22efb9
+    - name: Generate (Linux)
+      if: runner.os == 'Linux'
+      run: mkdir build && cd build && cmake -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=RelWithDebInfo -DQUIC_TLS=${{ matrix.tls }} -DQUIC_BUILD_SHARED=${{ matrix.shared }} ..
+    - name: Generate (Windows)
+      if: runner.os == 'Windows'
+      run: mkdir build && cd build && cmake -G Visual Studio 17 2022' -A x64 -DQUIC_TLS=${{ matrix.tls }} -DQUIC_BUILD_SHARED=${{ matrix.shared }} ..
+    - name: Build (Linux)
+      if: runner.os == 'Linux'
       run: cd build && cmake --build .
+    - name: Build (Windows)
+      if: runner.os == 'Windows'
+      run: cd build && cmake --build . --config Release
     - name: Upload
       uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
       with:
-        name: bin-linux-openssl
+        name: bin-${{ matrix.os }}-${{ matrix.tls }}-shared_${{ matrix.shared }}
         path: |
           build/**/*.so
-          build/**/quicreach
-    - name: Install
-      run: cd build && sudo cmake --install . --config Debug
-    - name: quicreach outlook-evergreen.office.com
-      run: /usr/local/lib/quicreach outlook-evergreen.office.com
-    - name: quicreach www.cloudflare.com
-      run: /usr/local/lib/quicreach www.cloudflare.com
-    - name: quicreach www.google.com
-      run: /usr/local/lib/quicreach www.google.com
-  build-linux-openssl-static:
-    permissions:
-      contents: read
-    name: Build Linux (OpenSSL) Static
-    runs-on: ubuntu-latest
-    steps:
-    - name: Harden Runner
-      uses: step-security/harden-runner@9b0655f430fba8c7001d4e38f8d4306db5c6e0ab
-      with:
-        egress-policy: audit
-    - name: Checkout repository
-      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      with:
-        submodules: 'recursive'
-    - name: Generate
-      run: mkdir build && cd build && cmake -G 'Unix Makefiles' -DQUIC_BUILD_SHARED=off ..
-    - name: Build
-      run: cd build && cmake --build .
-    - name: Upload
-      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
-      with:
-        name: bin-linux-openssl-static
-        path: |
-          build/**/quicreach
-    - name: Install
-      run: cd build && sudo cmake --install . --config Debug
-    - name: quicreach outlook-evergreen.office.com
-      run: /usr/local/lib/quicreach outlook-evergreen.office.com
-    - name: quicreach www.cloudflare.com
-      run: /usr/local/lib/quicreach www.cloudflare.com
-    - name: quicreach www.google.com
-      run: /usr/local/lib/quicreach www.google.com
-  build-windows-openssl:
-    permissions:
-      contents: read
-    name: Build Windows (OpenSSL)
-    runs-on: windows-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      with:
-        submodules: 'recursive'
-    - name: Install Perl
-      uses: shogo82148/actions-setup-perl@20a7fcafc28850ff808cc2fa81e688fca4b3b47c
-      with:
-        perl-version: '5.34'
-    - name: Install NASM
-      uses: ilammy/setup-nasm@10788e307d96af7013172d66126322c70b22efb9
-    - name: Generate
-      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_TLS=openssl ..
-    - name: Build
-      run: cd build && cmake --build .
-    - name: Upload
-      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
-      with:
-        name: bin-windows-openssl
-        path: |
           build/**/*.dll
+          build/**/quicreach
           build/**/quicreach.exe
     - name: Install
-      run: cd build && cmake --install . --config Debug
-    - name: quicreach outlook.office.com
+      run: cd build && sudo cmake --install . --config Release
+    - name: Test (Linux)
+      if: runner.os == 'Linux'
+      run: /usr/local/lib/quicreach outlook-evergreen.office.com,www.cloudflare.com,www.google.com --req-all --stats
+    - name: Test (Windows)
+      if: runner.os == 'Windows'
       run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' outlook-evergreen.office.com
-    - name: quicreach www.cloudflare.com
-      run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' www.cloudflare.com
-    - name: quicreach www.google.com
-      run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' www.google.com
-  build-windows-openssl-static:
-    permissions:
-      contents: read
-    name: Build Windows (OpenSSL) Static
-    runs-on: windows-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      with:
-        submodules: 'recursive'
-    - name: Install Perl
-      uses: shogo82148/actions-setup-perl@20a7fcafc28850ff808cc2fa81e688fca4b3b47c
-      with:
-        perl-version: '5.34'
-    - name: Install NASM
-      uses: ilammy/setup-nasm@10788e307d96af7013172d66126322c70b22efb9
-    - name: Generate
-      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_BUILD_SHARED=off -DQUIC_TLS=openssl ..
-    - name: Build
-      run: cd build && cmake --build .
-    - name: Upload
-      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
-      with:
-        name: bin-windows-openssl
-        path: |
-          build/**/quicreach.exe
-    - name: Install
-      run: cd build && cmake --install . --config Debug
-    - name: quicreach outlook.office.com
-      run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' outlook-evergreen.office.com
-    - name: quicreach www.cloudflare.com
-      run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' www.cloudflare.com
-    - name: quicreach www.google.com
-      run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' www.google.com
-  build-windows-schannel:
-    permissions:
-      contents: read
-    name: Build Windows (Schannel)
-    runs-on: windows-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      with:
-        submodules: 'recursive'
-    - name: Generate
-      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 ..
-    - name: Build
-      run: cd build && cmake --build .
-    - name: Upload
-      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
-      with:
-        name: bin-windows-schannel
-        path: |
-          build/**/*.dll
-          build/**/quicreach.exe
-    - name: Install
-      run: cd build && cmake --install . --config Debug
-    - name: quicreach outlook.office.com
-      run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' outlook-evergreen.office.com
-    - name: quicreach www.cloudflare.com
-      run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' www.cloudflare.com
-    - name: quicreach www.google.com
-      run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' www.google.com
-  build-windows-schannel-static:
-    permissions:
-      contents: read
-    name: Build Windows (Schannel) Static
-    runs-on: windows-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      with:
-        submodules: 'recursive'
-    - name: Generate
-      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_BUILD_SHARED=off ..
-    - name: Build
-      run: cd build && cmake --build .
-    - name: Upload
-      uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
-      with:
-        name: bin-windows-schannel
-        path: |
-          build/**/quicreach.exe
-    - name: Install
-      run: cd build && cmake --install . --config Debug
-    - name: quicreach outlook.office.com
-      run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' outlook-evergreen.office.com
-    - name: quicreach www.cloudflare.com
-      run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' www.cloudflare.com
-    - name: quicreach www.google.com
-      run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' www.google.com
-
+        & 'C:/Program Files/quicreach/lib/quicreach' outlook-evergreen.office.com,www.cloudflare.com,www.google.com --req-all --stats
