@@ -1,4 +1,4 @@
 [submodule "msquic"]
 	path = msquic
 	url = https://github.com/microsoft/msquic
-	branch = release/2.0
+	branch = main
