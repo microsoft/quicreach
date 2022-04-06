@@ -26,6 +26,7 @@ const char* TopDomains[] =
     "quicker.edm.uhasselt.be",
     "quic.examp1e.net",
     "h2o.examp1e.net",
+    "www.haproxy.org",
     // Top-level domains - found on GitHub at https://gist.github.com/jgamblin/62fadd8aa321f7f6a482912a6a317ea3
     "google.com",
     "youtube.com",
