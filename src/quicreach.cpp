@@ -40,12 +40,13 @@ struct ReachConfig {
 bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
     if (argc < 2 || !strcmp(argv[1], "-?") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
         printf("usage: quicreach <hostname(s)> [options...]\n"
-               " -a, --alpn         The ALPN to use for the handshake (def=h3)\n"
-               " -h, --help         Prints this help text\n"
-               " -p, --port <port>  The default UDP port to use\n"
-               " -r, --req-all      Require all hostnames to suceed\n"
-               " -s, --stats        Print connection statistics\n"
-               " -u, --unsecure     Allows unsecure connections\n"
+               " -a, --alpn <alpn>            The ALPN to use for the handshake (def=h3)\n"
+               " -b, --built-in-validation    Use built-in TLS validation logic\n"
+               " -h, --help                   Prints this help text\n"
+               " -p, --port <port>            The default UDP port to use\n"
+               " -r, --req-all                Require all hostnames to suceed\n"
+               " -s, --stats                  Print connection statistics\n"
+               " -u, --unsecure               Allows unsecure connections\n"
               );
         return false;
     }
