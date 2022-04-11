@@ -44,7 +44,7 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
                " -b, --built-in-validation    Use built-in TLS validation logic\n"
                " -h, --help                   Prints this help text\n"
                " -p, --port <port>            The default UDP port to use\n"
-               " -r, --req-all                Require all hostnames to suceed\n"
+               " -r, --req-all                Require all hostnames to succeed\n"
                " -s, --stats                  Print connection statistics\n"
                " -u, --unsecure               Allows unsecure connections\n"
               );
