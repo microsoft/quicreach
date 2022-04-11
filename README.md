@@ -32,11 +32,13 @@ cmake --build .
 ```
 > quicreach --help
 usage: quicreach <hostname(s)> [options...]
- -a, --alpn         The ALPN to use for the handshake (def=h3)
- -h, --help         Prints this help text
- -p, --port <port>  The default UDP port to use
- -s, --stats        Print connection statistics
- -u, --unsecure     Allows unsecure connections
+ -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)
+ -b, --built-in-val     Use built-in TLS validation logic
+ -h, --help             Prints this help text
+ -p, --port <port>      The default UDP port to use
+ -r, --req-all          Require all hostnames to succeed
+ -s, --stats            Print connection statistics
+ -u, --unsecure         Allows unsecure connections
 ```
 
 ```
@@ -50,16 +52,16 @@ Failure
 
 ```Bash
 > quicreach '*' --stats
-                        SERVER          TIME           RTT    SEND:RECV           STATS
-               quic.aiortc.org    209.917 ms     99.328 ms    1242:4880 (3.9x)    4545 RX CRYPTO
-              ietf.akaquic.com
+                        SERVER           RTT        TIME_I        TIME_H           SEND:RECV      C1      S1
+               quic.aiortc.org     68.545 ms     73.855 ms    143.703 ms    2440:4898 (2.0x)     274    4545
+              ietf.akaquic.com     89.399 ms     92.660 ms    182.458 ms    2440:5850 (2.4x)     275    4565
                  quic.ogre.com
                     quic.rocks
-                       mew.org    428.800 ms    212.446 ms    1284:6650 (5.2x)    4541 RX CRYPTO
+                       mew.org    177.611 ms    177.872 ms    352.459 ms    2440:6750 (2.8x)     266    4541
   http3-test.litespeedtech.com
-                    msquic.net    147.155 ms     75.131 ms    1263:3729 (3.0x)    3461 RX CRYPTO
-                   nghttp2.org
-           cloudflare-quic.com     27.666 ms     14.006 ms    1200:5130 (4.3x)    2668 RX CRYPTO
+                    msquic.net     67.373 ms     67.735 ms    130.850 ms    2440:3729 (1.5x)     269    3461
+                   nghttp2.org    158.051 ms    158.364 ms    314.771 ms    2440:4542 (1.9x)     270    4173
+           cloudflare-quic.com      1.958 ms      5.841 ms      6.548 ms    1220:5129 (4.2x)     278    2667
           pandora.cm.in.tum.de
 ```
 
