@@ -40,13 +40,13 @@ struct ReachConfig {
 bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
     if (argc < 2 || !strcmp(argv[1], "-?") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
         printf("usage: quicreach <hostname(s)> [options...]\n"
-               " -a, --alpn <alpn>            The ALPN to use for the handshake (def=h3)\n"
-               " -b, --built-in-validation    Use built-in TLS validation logic\n"
-               " -h, --help                   Prints this help text\n"
-               " -p, --port <port>            The default UDP port to use\n"
-               " -r, --req-all                Require all hostnames to succeed\n"
-               " -s, --stats                  Print connection statistics\n"
-               " -u, --unsecure               Allows unsecure connections\n"
+               " -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)\n"
+               " -b, --built-in-val     Use built-in TLS validation logic\n"
+               " -h, --help             Prints this help text\n"
+               " -p, --port <port>      The default UDP port to use\n"
+               " -r, --req-all          Require all hostnames to succeed\n"
+               " -s, --stats            Print connection statistics\n"
+               " -u, --unsecure         Allows unsecure connections\n"
               );
         return false;
     }
@@ -72,7 +72,7 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
         if (!strcmp(argv[i], "--alpn") || !strcmp(argv[i], "-a")) {
             if (++i >= argc) { printf("Missing ALPN string\n"); return false; }
             Config.Alpn = argv[i];
-        } else if (!strcmp(argv[i], "--built-in-validation") || !strcmp(argv[i], "-b")) {
+        } else if (!strcmp(argv[i], "--built-in-val") || !strcmp(argv[i], "-b")) {
             Config.CredFlags |= QUIC_CREDENTIAL_FLAG_USE_TLS_BUILTIN_CERTIFICATE_VALIDATION;
         } else if (!strcmp(argv[i], "--port") || !strcmp(argv[i], "-p")) {
             if (++i >= argc) { printf("Missing port number\n"); return false; }
