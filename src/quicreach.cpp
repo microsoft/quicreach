@@ -71,6 +71,8 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
         if (!strcmp(argv[i], "--alpn") || !strcmp(argv[i], "-a")) {
             if (++i >= argc) { printf("Missing ALPN string\n"); return false; }
             Config.Alpn = argv[i];
+        } else if (!strcmp(argv[i], "--built-in-validation") || !strcmp(argv[i], "-b")) {
+            Config.CredFlags |= QUIC_CREDENTIAL_FLAG_USE_TLS_BUILTIN_CERTIFICATE_VALIDATION;
         } else if (!strcmp(argv[i], "--port") || !strcmp(argv[i], "-p")) {
             if (++i >= argc) { printf("Missing port number\n"); return false; }
             Config.Port = (uint16_t)atoi(argv[i]);
@@ -128,7 +130,7 @@ bool TestReachability(const ReachConfig& Config) {
     if (!Configuration.IsValid()) { printf("Configuration initializtion failed!\n"); return false; }
 
     if (Config.PrintStatistics)
-        printf("%30s          TIME           RTT    SEND:RECV           STATS\n", "SERVER");
+        printf("%30s           RTT        TIME_I        TIME_H           SEND:RECV      C1      S1\n", "SERVER");
 
     uint32_t ReachableCount = 0;
     for (auto HostName : Config.HostNames) {
@@ -141,15 +143,18 @@ bool TestReachability(const ReachConfig& Config) {
 
         Connection.WaitOnHandshakeComplete();
         if (Connection.HandshakeSuccess) {
-            auto Time = (uint32_t)(Connection.Stats.TimingHandshakeFlightEnd - Connection.Stats.TimingStart);
-            auto Amplication = (double)Connection.Stats.RecvTotalBytes / (double)Connection.Stats.SendTotalBytes;
+            auto HandshakeTime = (uint32_t)(Connection.Stats.TimingHandshakeFlightEnd - Connection.Stats.TimingStart);
+            auto InitialTime = (uint32_t)(Connection.Stats.TimingInitialFlightEnd - Connection.Stats.TimingStart);
+            auto Amplification = (double)Connection.Stats.RecvTotalBytes / (double)Connection.Stats.SendTotalBytes;
             if (Config.PrintStatistics)
-                printf("    %3u.%03u ms    %3u.%03u ms    %u:%u (%2.1fx)    %u RX CRYPTO",
-                        Time / 1000, Time % 1000,
+                printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u (%2.1fx)    %4u    %4u",
                         Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
+                        InitialTime / 1000, InitialTime % 1000,
+                        HandshakeTime / 1000, HandshakeTime % 1000,
                         (uint32_t)Connection.Stats.SendTotalBytes,
                         (uint32_t)Connection.Stats.RecvTotalBytes,
-                        Amplication,
+                        Amplification,
+                        Connection.Stats.HandshakeClientFlight1Bytes,
                         Connection.Stats.HandshakeServerFlight1Bytes);
             ++ReachableCount;
         }
