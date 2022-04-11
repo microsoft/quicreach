@@ -133,7 +133,7 @@ bool TestReachability(const ReachConfig& Config) {
     if (Config.PrintStatistics)
         printf("%30s           RTT        TIME_I        TIME_H           SEND:RECV      C1      S1\n", "SERVER");
 
-    uint32_t ReachableCount = 0;
+    uint32_t ReachableCount = 0, TooMuchCount = 0, MultiRttCount = 0;
     for (auto HostName : Config.HostNames) {
         if (Config.PrintStatistics) printf("%30s", HostName);
         ReachConnection Connection(Registration);
@@ -147,8 +147,16 @@ bool TestReachability(const ReachConfig& Config) {
             auto HandshakeTime = (uint32_t)(Connection.Stats.TimingHandshakeFlightEnd - Connection.Stats.TimingStart);
             auto InitialTime = (uint32_t)(Connection.Stats.TimingInitialFlightEnd - Connection.Stats.TimingStart);
             auto Amplification = (double)Connection.Stats.RecvTotalBytes / (double)Connection.Stats.SendTotalBytes;
+            auto TooMuch = false, MultiRtt = false;
+            if (HandshakeTime >= 1.8 * Connection.Stats.MinRtt) {
+                MultiRtt = true;
+                ++MultiRttCount;
+            } else {
+                TooMuch = Amplification > 3.0;
+                if (TooMuch) ++TooMuchCount;
+            }
             if (Config.PrintStatistics)
-                printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u (%2.1fx)    %4u    %4u",
+                printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u (%2.1fx)    %4u    %4u    %c",
                         Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
                         InitialTime / 1000, InitialTime % 1000,
                         HandshakeTime / 1000, HandshakeTime % 1000,
@@ -156,14 +164,22 @@ bool TestReachability(const ReachConfig& Config) {
                         (uint32_t)Connection.Stats.RecvTotalBytes,
                         Amplification,
                         Connection.Stats.HandshakeClientFlight1Bytes,
-                        Connection.Stats.HandshakeServerFlight1Bytes);
+                        Connection.Stats.HandshakeServerFlight1Bytes,
+                        TooMuch ? '!' : (MultiRtt ? '*' : ' '));
             ++ReachableCount;
         }
         if (Config.PrintStatistics) printf("\n");
     }
 
-    if (Config.PrintStatistics && ReachableCount > 1)
-        printf("\n%u domains reachable\n", ReachableCount);
+    if (Config.PrintStatistics) {
+        if (ReachableCount > 1) {
+            printf("\n%u domains reachable\n", ReachableCount);
+            if (TooMuchCount)
+                printf("(!) %u domain(s) exceeded amplification limits\n", TooMuchCount);
+            if (MultiRttCount)
+                printf("(*) %u domain(s) required multiple round trips\n", MultiRttCount);
+        }
+    }
     return Config.RequireAll ? ((size_t)ReachableCount == Config.HostNames.size()) : (ReachableCount != 0);
 }
 
