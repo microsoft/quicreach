@@ -148,12 +148,12 @@ bool TestReachability(const ReachConfig& Config) {
             auto InitialTime = (uint32_t)(Connection.Stats.TimingInitialFlightEnd - Connection.Stats.TimingStart);
             auto Amplification = (double)Connection.Stats.RecvTotalBytes / (double)Connection.Stats.SendTotalBytes;
             auto TooMuch = false, MultiRtt = false;
-            if ((HandshakeTime - InitialTime) < Connection.Stats.Rtt) {
-                TooMuch = Amplification > 3.0;
-                if (TooMuch) ++TooMuchCount;
-            } else {
+            if (HandshakeTime >= 1.8 * Connection.Stats.MinRtt) {
                 MultiRtt = true;
                 ++MultiRttCount;
+            } else {
+                TooMuch = Amplification > 3.0;
+                if (TooMuch) ++TooMuchCount;
             }
             if (Config.PrintStatistics)
                 printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u (%2.1fx)    %4u    %4u    %c",
@@ -175,7 +175,7 @@ bool TestReachability(const ReachConfig& Config) {
         if (ReachableCount > 1) {
             printf("\n%u domains reachable\n", ReachableCount);
             if (TooMuchCount)
-                printf("(!) %u domain(s) exceed amplification limits\n", TooMuchCount);
+                printf("(!) %u domain(s) exceeded amplification limits\n", TooMuchCount);
             if (MultiRttCount)
                 printf("(*) %u domain(s) required multiple round trips\n", MultiRttCount);
         }
