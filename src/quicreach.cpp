@@ -179,7 +179,7 @@ bool TestReachability(const ReachConfig& Config) {
                 TooMuch = Amplification > 3.0;
                 if (TooMuch) ++TooMuchCount;
             }
-            if (Config.PrintStatistics) {
+            if (Config.PrintStatistics)
                 printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %c",
                     Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
                     InitialTime / 1000, InitialTime % 1000,
@@ -193,7 +193,6 @@ bool TestReachability(const ReachConfig& Config) {
                     Connection.Stats.HandshakeServerFlight1Bytes,
                     Connection.FamilyString,
                     TooMuch ? '!' : (MultiRtt ? '*' : ' '));
-            }
             ++ReachableCount;
         }
         if (Config.PrintStatistics) printf("\n");
