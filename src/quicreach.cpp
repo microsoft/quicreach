@@ -35,6 +35,8 @@ struct ReachConfig {
         Settings.SetDisconnectTimeoutMs(500);
         Settings.SetHandshakeIdleTimeoutMs(750);
         Settings.SetPeerUnidiStreamCount(3);
+        Settings.SetMinimumMtu(1288); /* We use a slightly larger than default MTU:
+                                         1240 (QUIC) + 40 (IPv6) + 8 (UDP) */
     }
 };
 
@@ -44,6 +46,7 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
                " -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)\n"
                " -b, --built-in-val     Use built-in TLS validation logic\n"
                " -h, --help             Prints this help text\n"
+               " -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)\n"
                " -p, --port <port>      The default UDP port to use\n"
                " -r, --req-all          Require all hostnames to succeed\n"
                " -s, --stats            Print connection statistics\n"
@@ -73,15 +76,23 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
         if (!strcmp(argv[i], "--alpn") || !strcmp(argv[i], "-a")) {
             if (++i >= argc) { printf("Missing ALPN string\n"); return false; }
             Config.Alpn = argv[i];
+
         } else if (!strcmp(argv[i], "--built-in-val") || !strcmp(argv[i], "-b")) {
             Config.CredFlags |= QUIC_CREDENTIAL_FLAG_USE_TLS_BUILTIN_CERTIFICATE_VALIDATION;
-        } else if (!strcmp(argv[i], "--port") || !strcmp(argv[i], "-p")) {
+
+        } else if (!strcmp(argv[i], "--mtu") || !strcmp(argv[i], "-m")) {
             if (++i >= argc) { printf("Missing port number\n"); return false; }
-            Config.Port = (uint16_t)atoi(argv[i]);
+
+        } else if (!strcmp(argv[i], "--port") || !strcmp(argv[i], "-p")) {
+            if (++i >= argc) { printf("Missing MTU value\n"); return false; }
+            Config.Settings.SetMinimumMtu((uint16_t)atoi(argv[i]));
+
         } else if (!strcmp(argv[i], "--stats") || !strcmp(argv[i], "-s")) {
             Config.PrintStatistics = true;
+
         } else if (!strcmp(argv[i], "--req-all") || !strcmp(argv[i], "-r")) {
             Config.RequireAll = true;
+
         } else if (!strcmp(argv[i], "--unsecure") || !strcmp(argv[i], "-u")) {
             Config.CredFlags |= QUIC_CREDENTIAL_FLAG_NO_CERTIFICATE_VALIDATION;
         }
@@ -181,11 +192,13 @@ bool TestReachability(const ReachConfig& Config) {
 
     if (Config.PrintStatistics) {
         if (ReachableCount > 1) {
-            printf("\n%u domains reachable\n", ReachableCount);
-            if (TooMuchCount)
-                printf("(!) %3u domain(s) exceeded amplification limits\n", TooMuchCount);
+            printf("\n");
+            printf("%4u domain(s) attempted\n", (uint32_t)Config.HostNames.size());
+            printf("%4u domain(s) reachable\n", ReachableCount);
             if (MultiRttCount)
-                printf("(*) %3u domain(s) required multiple round trips\n", MultiRttCount);
+                printf("%4u domain(s) required multiple round trips (*)\n", MultiRttCount);
+            if (TooMuchCount)
+                printf("%4u domain(s) exceeded amplification limits (!)\n", TooMuchCount);
         }
     }
     return Config.RequireAll ? ((size_t)ReachableCount == Config.HostNames.size()) : (ReachableCount != 0);
