@@ -108,6 +108,7 @@ struct ReachConnection : public MsQuicConnection {
     condition_variable HandshakeCompleteEvent;
     bool HandshakeSuccess {false};
     QUIC_STATISTICS_V2 Stats {0};
+    const char* FamilyString = "UNKN";
     ReachConnection(
         _In_ const MsQuicRegistration& Registration
     ) : MsQuicConnection(Registration, CleanUpManual, Callback) { }
@@ -129,6 +130,10 @@ struct ReachConnection : public MsQuicConnection {
         if (Event->Type == QUIC_CONNECTION_EVENT_CONNECTED) {
             Connection->HandshakeSuccess = true;
             Connection->GetStatistics(&Connection->Stats);
+            QuicAddr RemoteAddr;
+            if (QUIC_SUCCEEDED(Connection->GetRemoteAddr(RemoteAddr))) {
+                Connection->FamilyString = RemoteAddr.GetFamily() == QUIC_ADDRESS_FAMILY_INET6 ? "IPv6" : "IPv4";
+            }
             Connection->SetHandshakeComplete();
         } else if (Event->Type == QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE) {
             Connection->SetHandshakeComplete();
@@ -175,12 +180,6 @@ bool TestReachability(const ReachConfig& Config) {
                 if (TooMuch) ++TooMuchCount;
             }
             if (Config.PrintStatistics) {
-                QuicAddr RemoteAddr;
-                const char* Family = "UNKN";
-                if (QUIC_SUCCEEDED(Connection.GetRemoteAddr(RemoteAddr))) {
-                    Family = RemoteAddr.GetFamily() == QUIC_ADDRESS_FAMILY_INET6 ? "IPv6" : "IPv4";
-                }
-
                 printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %c",
                     Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
                     InitialTime / 1000, InitialTime % 1000,
@@ -192,7 +191,7 @@ bool TestReachability(const ReachConfig& Config) {
                     Amplification,
                     Connection.Stats.HandshakeClientFlight1Bytes,
                     Connection.Stats.HandshakeServerFlight1Bytes,
-                    Family,
+                    Connection.FamilyString,
                     TooMuch ? '!' : (MultiRtt ? '*' : ' '));
             }
             ++ReachableCount;
