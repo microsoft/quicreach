@@ -32,6 +32,7 @@ struct ReachConfig {
     MsQuicSettings Settings;
     QUIC_CREDENTIAL_FLAGS CredFlags {QUIC_CREDENTIAL_FLAG_CLIENT};
     ReachConfig() {
+        Settings.SetDisconnectTimeoutMs(500);
         Settings.SetHandshakeIdleTimeoutMs(750);
         Settings.SetPeerUnidiStreamCount(3);
     }
@@ -125,13 +126,18 @@ struct ReachConnection : public MsQuicConnection {
     }
 };
 
+
+// TODO:
+// - MsQuic should expose HRR flag for handshake?
+// - Figure out a way to fingerprint the server implementation?
+
 bool TestReachability(const ReachConfig& Config) {
     MsQuicRegistration Registration("quicreach");
     MsQuicConfiguration Configuration(Registration, Config.Alpn, Config.Settings, MsQuicCredentialConfig(Config.CredFlags));
     if (!Configuration.IsValid()) { printf("Configuration initializtion failed!\n"); return false; }
 
     if (Config.PrintStatistics)
-        printf("%30s           RTT        TIME_I        TIME_H           SEND:RECV      C1      S1\n", "SERVER");
+        printf("%30s           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1\n", "SERVER");
 
     uint32_t ReachableCount = 0, TooMuchCount = 0, MultiRttCount = 0;
     for (auto HostName : Config.HostNames) {
@@ -148,7 +154,7 @@ bool TestReachability(const ReachConfig& Config) {
             auto InitialTime = (uint32_t)(Connection.Stats.TimingInitialFlightEnd - Connection.Stats.TimingStart);
             auto Amplification = (double)Connection.Stats.RecvTotalBytes / (double)Connection.Stats.SendTotalBytes;
             auto TooMuch = false, MultiRtt = false;
-            if (HandshakeTime >= 1.8 * Connection.Stats.MinRtt) {
+            if (Connection.Stats.SendTotalPackets != 1) {
                 MultiRtt = true;
                 ++MultiRttCount;
             } else {
@@ -156,10 +162,12 @@ bool TestReachability(const ReachConfig& Config) {
                 if (TooMuch) ++TooMuchCount;
             }
             if (Config.PrintStatistics)
-                printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u (%2.1fx)    %4u    %4u    %c",
+                printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %c",
                         Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
                         InitialTime / 1000, InitialTime % 1000,
                         HandshakeTime / 1000, HandshakeTime % 1000,
+                        (uint32_t)Connection.Stats.SendTotalPackets,
+                        (uint32_t)Connection.Stats.RecvTotalPackets,
                         (uint32_t)Connection.Stats.SendTotalBytes,
                         (uint32_t)Connection.Stats.RecvTotalBytes,
                         Amplification,
@@ -175,9 +183,9 @@ bool TestReachability(const ReachConfig& Config) {
         if (ReachableCount > 1) {
             printf("\n%u domains reachable\n", ReachableCount);
             if (TooMuchCount)
-                printf("(!) %u domain(s) exceeded amplification limits\n", TooMuchCount);
+                printf("(!) %3u domain(s) exceeded amplification limits\n", TooMuchCount);
             if (MultiRttCount)
-                printf("(*) %u domain(s) required multiple round trips\n", MultiRttCount);
+                printf("(*) %3u domain(s) required multiple round trips\n", MultiRttCount);
         }
     }
     return Config.RequireAll ? ((size_t)ReachableCount == Config.HostNames.size()) : (ReachableCount != 0);
