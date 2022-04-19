@@ -37,6 +37,7 @@ struct ReachConfig {
         Settings.SetPeerUnidiStreamCount(3);
         Settings.SetMinimumMtu(1288); /* We use a slightly larger than default MTU:
                                          1240 (QUIC) + 40 (IPv6) + 8 (UDP) */
+        Settings.SetMaximumMtu(1500);
     }
 };
 
@@ -81,11 +82,12 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
             Config.CredFlags |= QUIC_CREDENTIAL_FLAG_USE_TLS_BUILTIN_CERTIFICATE_VALIDATION;
 
         } else if (!strcmp(argv[i], "--mtu") || !strcmp(argv[i], "-m")) {
-            if (++i >= argc) { printf("Missing port number\n"); return false; }
-
-        } else if (!strcmp(argv[i], "--port") || !strcmp(argv[i], "-p")) {
             if (++i >= argc) { printf("Missing MTU value\n"); return false; }
             Config.Settings.SetMinimumMtu((uint16_t)atoi(argv[i]));
+
+        } else if (!strcmp(argv[i], "--port") || !strcmp(argv[i], "-p")) {
+            if (++i >= argc) { printf("Missing port number\n"); return false; }
+            Config.Port = (uint16_t)atoi(argv[i]);
 
         } else if (!strcmp(argv[i], "--stats") || !strcmp(argv[i], "-s")) {
             Config.PrintStatistics = true;
