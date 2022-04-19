@@ -108,6 +108,7 @@ struct ReachConnection : public MsQuicConnection {
     condition_variable HandshakeCompleteEvent;
     bool HandshakeSuccess {false};
     QUIC_STATISTICS_V2 Stats {0};
+    const char* FamilyString = "UNKN";
     ReachConnection(
         _In_ const MsQuicRegistration& Registration
     ) : MsQuicConnection(Registration, CleanUpManual, Callback) { }
@@ -129,6 +130,10 @@ struct ReachConnection : public MsQuicConnection {
         if (Event->Type == QUIC_CONNECTION_EVENT_CONNECTED) {
             Connection->HandshakeSuccess = true;
             Connection->GetStatistics(&Connection->Stats);
+            QuicAddr RemoteAddr;
+            if (QUIC_SUCCEEDED(Connection->GetRemoteAddr(RemoteAddr))) {
+                Connection->FamilyString = RemoteAddr.GetFamily() == QUIC_ADDRESS_FAMILY_INET6 ? "IPv6" : "IPv4";
+            }
             Connection->SetHandshakeComplete();
         } else if (Event->Type == QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE) {
             Connection->SetHandshakeComplete();
@@ -150,7 +155,7 @@ bool TestReachability(const ReachConfig& Config) {
     if (!Configuration.IsValid()) { printf("Configuration initializtion failed!\n"); return false; }
 
     if (Config.PrintStatistics)
-        printf("%30s           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1\n", "SERVER");
+        printf("%30s           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1    FAMILY\n", "SERVER");
 
     uint32_t ReachableCount = 0, TooMuchCount = 0, MultiRttCount = 0;
     for (auto HostName : Config.HostNames) {
@@ -175,18 +180,19 @@ bool TestReachability(const ReachConfig& Config) {
                 if (TooMuch) ++TooMuchCount;
             }
             if (Config.PrintStatistics)
-                printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %c",
-                        Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
-                        InitialTime / 1000, InitialTime % 1000,
-                        HandshakeTime / 1000, HandshakeTime % 1000,
-                        (uint32_t)Connection.Stats.SendTotalPackets,
-                        (uint32_t)Connection.Stats.RecvTotalPackets,
-                        (uint32_t)Connection.Stats.SendTotalBytes,
-                        (uint32_t)Connection.Stats.RecvTotalBytes,
-                        Amplification,
-                        Connection.Stats.HandshakeClientFlight1Bytes,
-                        Connection.Stats.HandshakeServerFlight1Bytes,
-                        TooMuch ? '!' : (MultiRtt ? '*' : ' '));
+                printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %c",
+                    Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
+                    InitialTime / 1000, InitialTime % 1000,
+                    HandshakeTime / 1000, HandshakeTime % 1000,
+                    (uint32_t)Connection.Stats.SendTotalPackets,
+                    (uint32_t)Connection.Stats.RecvTotalPackets,
+                    (uint32_t)Connection.Stats.SendTotalBytes,
+                    (uint32_t)Connection.Stats.RecvTotalBytes,
+                    Amplification,
+                    Connection.Stats.HandshakeClientFlight1Bytes,
+                    Connection.Stats.HandshakeServerFlight1Bytes,
+                    Connection.FamilyString,
+                    TooMuch ? '!' : (MultiRtt ? '*' : ' '));
             ++ReachableCount;
         }
         if (Config.PrintStatistics) printf("\n");
