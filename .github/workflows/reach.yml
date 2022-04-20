@@ -10,8 +10,7 @@ permissions: read-all
 
 jobs:
   reach-linux-openssl:
-    permissions:
-      contents: write-all
+    permissions: write-all
     name: Top 1000 Reachability Test
     runs-on: ubuntu-latest
     steps:
