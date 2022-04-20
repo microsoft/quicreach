@@ -3,6 +3,8 @@ name: Reach
 on:
   push:
     branches: main
+  schedule:
+    - cron: '0 0 * * *' # every day at midnight
 
 permissions: read-all
 
