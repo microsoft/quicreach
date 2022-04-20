@@ -30,10 +30,10 @@ jobs:
     - name: Save results
       run: |
         git checkout data
-        tail -n 1 build/data.csv > data.csv
+        tail -n 1 build/data.csv >> data.csv
         git config user.email "quicdev@microsoft.com"
         git config user.name "QUIC Dev[bot]"
-        git add .
+        git add data.csv
         git status
         git commit -m "Latest Reachability Results"
         git pull
