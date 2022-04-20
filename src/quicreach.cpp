@@ -5,6 +5,8 @@
 
 --*/
 
+#define _CRT_SECURE_NO_WARNINGS 1
+
 #include <stdio.h>
 #include <thread>
 #include <vector>
@@ -31,6 +33,7 @@ struct ReachConfig {
     MsQuicAlpn Alpn {"h3"};
     MsQuicSettings Settings;
     QUIC_CREDENTIAL_FLAGS CredFlags {QUIC_CREDENTIAL_FLAG_CLIENT};
+    const char* OutputFile {nullptr};
     ReachConfig() {
         Settings.SetDisconnectTimeoutMs(500);
         Settings.SetHandshakeIdleTimeoutMs(750);
@@ -41,11 +44,19 @@ struct ReachConfig {
     }
 };
 
+struct ReachResults {
+    uint32_t TotalCount {0};
+    uint32_t ReachableCount {0};
+    uint32_t TooMuchCount {0};
+    uint32_t MultiRttCount {0};
+};
+
 bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
     if (argc < 2 || !strcmp(argv[1], "-?") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
         printf("usage: quicreach <hostname(s)> [options...]\n"
                " -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)\n"
                " -b, --built-in-val     Use built-in TLS validation logic\n"
+               " -f, --file <file>      Writes the results to the given file\n"
                " -h, --help             Prints this help text\n"
                " -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)\n"
                " -p, --port <port>      The default UDP port to use\n"
@@ -80,6 +91,10 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
 
         } else if (!strcmp(argv[i], "--built-in-val") || !strcmp(argv[i], "-b")) {
             Config.CredFlags |= QUIC_CREDENTIAL_FLAG_USE_TLS_BUILTIN_CERTIFICATE_VALIDATION;
+
+        } else if (!strcmp(argv[i], "--file") || !strcmp(argv[i], "-f")) {
+            if (++i >= argc) { printf("Missing file name\n"); return false; }
+            Config.OutputFile = argv[i];
 
         } else if (!strcmp(argv[i], "--mtu") || !strcmp(argv[i], "-m")) {
             if (++i >= argc) { printf("Missing MTU value\n"); return false; }
@@ -144,6 +159,25 @@ struct ReachConnection : public MsQuicConnection {
     }
 };
 
+void DumpResultsToFile(const ReachConfig &Config, const ReachResults &Results) {
+    FILE* File = fopen(Config.OutputFile, "wx"); // Try to create a new file
+    if (!File) {
+        File = fopen(Config.OutputFile, "a"); // Open an existing file
+        if (!File) {
+            printf("Failed to open output file: %s\n", Config.OutputFile);
+            return;
+        }
+    } else {
+        fprintf(File, "UtcDateTime,Total,Reachable,TooMuch,MultiRtt\n");
+    }
+    char UtcDateTime[256];
+    time_t Time = time(nullptr);
+    struct tm* Tm = gmtime(&Time);
+    strftime(UtcDateTime, sizeof(UtcDateTime), "%Y.%m.%d-%H:%M:%S", Tm);
+    fprintf(File, "%s,%u,%u,%u,%u\n", UtcDateTime, Results.TotalCount, Results.ReachableCount, Results.TooMuchCount, Results.MultiRttCount);
+    fclose(File);
+    printf("\nOutput written to %s\n", Config.OutputFile);
+}
 
 // TODO:
 // - MsQuic should expose HRR flag for handshake?
@@ -157,8 +191,9 @@ bool TestReachability(const ReachConfig& Config) {
     if (Config.PrintStatistics)
         printf("%30s           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1    FAMILY\n", "SERVER");
 
-    uint32_t ReachableCount = 0, TooMuchCount = 0, MultiRttCount = 0;
+    ReachResults Results;
     for (auto HostName : Config.HostNames) {
+        ++Results.TotalCount;
         if (Config.PrintStatistics) printf("%30s", HostName);
         ReachConnection Connection(Registration);
         if (!Connection.IsValid()) { printf("Connection initializtion failed!\n"); return false; }
@@ -168,16 +203,17 @@ bool TestReachability(const ReachConfig& Config) {
 
         Connection.WaitOnHandshakeComplete();
         if (Connection.HandshakeSuccess) {
+            ++Results.ReachableCount;
             auto HandshakeTime = (uint32_t)(Connection.Stats.TimingHandshakeFlightEnd - Connection.Stats.TimingStart);
             auto InitialTime = (uint32_t)(Connection.Stats.TimingInitialFlightEnd - Connection.Stats.TimingStart);
             auto Amplification = (double)Connection.Stats.RecvTotalBytes / (double)Connection.Stats.SendTotalBytes;
             auto TooMuch = false, MultiRtt = false;
             if (Connection.Stats.SendTotalPackets != 1) {
                 MultiRtt = true;
-                ++MultiRttCount;
+                ++Results.MultiRttCount;
             } else {
                 TooMuch = Amplification > 3.0;
-                if (TooMuch) ++TooMuchCount;
+                if (TooMuch) ++Results.TooMuchCount;
             }
             if (Config.PrintStatistics)
                 printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %c",
@@ -193,23 +229,25 @@ bool TestReachability(const ReachConfig& Config) {
                     Connection.Stats.HandshakeServerFlight1Bytes,
                     Connection.FamilyString,
                     TooMuch ? '!' : (MultiRtt ? '*' : ' '));
-            ++ReachableCount;
         }
         if (Config.PrintStatistics) printf("\n");
     }
 
     if (Config.PrintStatistics) {
-        if (ReachableCount > 1) {
+        if (Results.ReachableCount > 1) {
             printf("\n");
             printf("%4u domain(s) attempted\n", (uint32_t)Config.HostNames.size());
-            printf("%4u domain(s) reachable\n", ReachableCount);
-            if (MultiRttCount)
-                printf("%4u domain(s) required multiple round trips (*)\n", MultiRttCount);
-            if (TooMuchCount)
-                printf("%4u domain(s) exceeded amplification limits (!)\n", TooMuchCount);
+            printf("%4u domain(s) reachable\n", Results.ReachableCount);
+            if (Results.MultiRttCount)
+                printf("%4u domain(s) required multiple round trips (*)\n", Results.MultiRttCount);
+            if (Results.TooMuchCount)
+                printf("%4u domain(s) exceeded amplification limits (!)\n", Results.TooMuchCount);
         }
     }
-    return Config.RequireAll ? ((size_t)ReachableCount == Config.HostNames.size()) : (ReachableCount != 0);
+
+    if (Config.OutputFile) DumpResultsToFile(Config, Results);
+
+    return Config.RequireAll ? ((size_t)Results.ReachableCount == Config.HostNames.size()) : (Results.ReachableCount != 0);
 }
 
 int QUIC_CALL main(int argc, char **argv) {

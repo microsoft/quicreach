@@ -34,7 +34,9 @@ cmake --build .
 usage: quicreach <hostname(s)> [options...]
  -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)
  -b, --built-in-val     Use built-in TLS validation logic
+ -f, --file <file>      Writes the results to the given file
  -h, --help             Prints this help text
+ -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)
  -p, --port <port>      The default UDP port to use
  -r, --req-all          Require all hostnames to succeed
  -s, --stats            Print connection statistics
@@ -52,16 +54,16 @@ Failure
 
 ```Bash
 > quicreach '*' --stats
-                        SERVER           RTT        TIME_I        TIME_H           SEND:RECV      C1      S1
-               quic.aiortc.org     68.545 ms     73.855 ms    143.703 ms    2440:4898 (2.0x)     274    4545
-              ietf.akaquic.com     89.399 ms     92.660 ms    182.458 ms    2440:5850 (2.4x)     275    4565
+                        SERVER           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1    FAMILY
+               quic.aiortc.org    102.082 ms    106.934 ms    240.379 ms    4:5 2523:4900 (1.9x)     274    4547    IPv6     *
+              ietf.akaquic.com     98.277 ms    100.906 ms    201.243 ms    3:5 2480:5869 (2.4x)     275    4564    IPv6     *
                  quic.ogre.com
                     quic.rocks
-                       mew.org    177.611 ms    177.872 ms    352.459 ms    2440:6750 (2.8x)     266    4541
+                       mew.org    190.587 ms    190.857 ms    379.342 ms    4:6 2522:6650 (2.6x)     266    4541    IPv6     *
   http3-test.litespeedtech.com
-                    msquic.net     67.373 ms     67.735 ms    130.850 ms    2440:3729 (1.5x)     269    3461
-                   nghttp2.org    158.051 ms    158.364 ms    314.771 ms    2440:4542 (1.9x)     270    4173
-           cloudflare-quic.com      1.958 ms      5.841 ms      6.548 ms    1220:5129 (4.2x)     278    2667
+                    msquic.net     76.161 ms     76.582 ms     78.957 ms    1:4 1260:3660 (2.9x)     269    3461    IPv4
+                   nghttp2.org
+           cloudflare-quic.com     14.688 ms     19.289 ms     24.105 ms    3:7 2480:5129 (2.1x)     278    2667    IPv6     *
           pandora.cm.in.tum.de
 ```
 
