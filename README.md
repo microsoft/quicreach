@@ -30,20 +30,6 @@ cmake --build .
 # Usage
 
 ```
-> quicreach --help
-usage: quicreach <hostname(s)> [options...]
- -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)
- -b, --built-in-val     Use built-in TLS validation logic
- -f, --file <file>      Writes the results to the given file
- -h, --help             Prints this help text
- -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)
- -p, --port <port>      The default UDP port to use
- -r, --req-all          Require all hostnames to succeed
- -s, --stats            Print connection statistics
- -u, --unsecure         Allows unsecure connections
-```
-
-```
 > quicreach google.com
 Success
 ```
@@ -65,6 +51,22 @@ Failure
                    nghttp2.org
            cloudflare-quic.com     14.688 ms     19.289 ms     24.105 ms    3:7 2480:5129 (2.1x)     278    2667    IPv6     *
           pandora.cm.in.tum.de
+```
+
+### Full Help
+
+```
+> quicreach --help
+usage: quicreach <hostname(s)> [options...]
+ -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)
+ -b, --built-in-val     Use built-in TLS validation logic
+ -f, --file <file>      Writes the results to the given file
+ -h, --help             Prints this help text
+ -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)
+ -p, --port <port>      The default UDP port to use
+ -r, --req-all          Require all hostnames to succeed
+ -s, --stats            Print connection statistics
+ -u, --unsecure         Allows unsecure connections
 ```
 
 # Contributing
