@@ -3,13 +3,15 @@ name: Reach
 on:
   push:
     branches: main
+  schedule:
+    - cron: '0 0 * * *' # every day at midnight
 
 permissions: read-all
 
 jobs:
   reach-linux-openssl:
     permissions:
-      contents: read
+      contents: write-all
     name: Top 1000 Reachability Test
     runs-on: ubuntu-latest
     steps:
@@ -24,4 +26,16 @@ jobs:
     - name: Install
       run: cd build && sudo cmake --install . --config Debug
     - name: quicreach *
-      run: /usr/local/lib/quicreach '*' --stats --file data.csv
+      run: /usr/local/lib/quicreach '*' --stats --file build/data.csv
+    - name: Save results
+      run: |
+        git checkout data
+        tail -n 1 build/data.csv > data.csv
+        git config user.email "quicdev@microsoft.com"
+        git config user.name "QUIC Dev[bot]"
+        git add .
+        git status
+        git commit -m "Latest Reachability Results"
+        git pull
+        git push
+        git checkout main
