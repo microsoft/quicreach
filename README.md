@@ -6,7 +6,7 @@
 This project has two primary purposes:
 
 1. It provides a complete (C++) client sample application built on top of [MsQuic](https://github.com/microsoft/msquic).
-2. It is a tool to test the QUIC reachability of a server.
+2. It is a tool to test the QUIC reachability of a server (see latest data [here](https://github.com/microsoft/quicreach/blob/data/data.csv)).
 
 # Build
 
