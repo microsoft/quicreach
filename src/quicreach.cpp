@@ -49,6 +49,7 @@ struct ReachResults {
     uint32_t ReachableCount {0};
     uint32_t TooMuchCount {0};
     uint32_t MultiRttCount {0};
+    uint32_t RetryCount {0};
 };
 
 bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
@@ -168,13 +169,13 @@ void DumpResultsToFile(const ReachConfig &Config, const ReachResults &Results) {
             return;
         }
     } else {
-        fprintf(File, "UtcDateTime,Total,Reachable,TooMuch,MultiRtt\n");
+        fprintf(File, "UtcDateTime,Total,Reachable,TooMuch,MultiRtt,Retry\n");
     }
     char UtcDateTime[256];
     time_t Time = time(nullptr);
     struct tm* Tm = gmtime(&Time);
     strftime(UtcDateTime, sizeof(UtcDateTime), "%Y.%m.%d-%H:%M:%S", Tm);
-    fprintf(File, "%s,%u,%u,%u,%u\n", UtcDateTime, Results.TotalCount, Results.ReachableCount, Results.TooMuchCount, Results.MultiRttCount);
+    fprintf(File, "%s,%u,%u,%u,%u,%u\n", UtcDateTime, Results.TotalCount, Results.ReachableCount, Results.TooMuchCount, Results.MultiRttCount, Results.RetryCount);
     fclose(File);
     printf("\nOutput written to %s\n", Config.OutputFile);
 }
@@ -208,6 +209,7 @@ bool TestReachability(const ReachConfig& Config) {
             auto InitialTime = (uint32_t)(Connection.Stats.TimingInitialFlightEnd - Connection.Stats.TimingStart);
             auto Amplification = (double)Connection.Stats.RecvTotalBytes / (double)Connection.Stats.SendTotalBytes;
             auto TooMuch = false, MultiRtt = false;
+            auto Retry = (bool)(Connection.Stats.StatelessRetry);
             if (Connection.Stats.SendTotalPackets != 1) {
                 MultiRtt = true;
                 ++Results.MultiRttCount;
@@ -215,8 +217,15 @@ bool TestReachability(const ReachConfig& Config) {
                 TooMuch = Amplification > 3.0;
                 if (TooMuch) ++Results.TooMuchCount;
             }
-            if (Config.PrintStatistics)
-                printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %c",
+            if (Retry) {
+              ++Results.RetryCount;
+            }
+            if (Config.PrintStatistics){
+                char HandshakeTags[3] = {
+                    TooMuch ? '!' : (MultiRtt ? '*' : ' '),
+                    Retry ? 'R' : ' ',
+                    '\0'};
+                printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %s",
                     Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
                     InitialTime / 1000, InitialTime % 1000,
                     HandshakeTime / 1000, HandshakeTime % 1000,
@@ -228,7 +237,8 @@ bool TestReachability(const ReachConfig& Config) {
                     Connection.Stats.HandshakeClientFlight1Bytes,
                     Connection.Stats.HandshakeServerFlight1Bytes,
                     Connection.FamilyString,
-                    TooMuch ? '!' : (MultiRtt ? '*' : ' '));
+                    HandshakeTags);
+            }
         }
         if (Config.PrintStatistics) printf("\n");
     }
@@ -242,6 +252,8 @@ bool TestReachability(const ReachConfig& Config) {
                 printf("%4u domain(s) required multiple round trips (*)\n", Results.MultiRttCount);
             if (Results.TooMuchCount)
                 printf("%4u domain(s) exceeded amplification limits (!)\n", Results.TooMuchCount);
+            if (Results.RetryCount)
+                printf("%4u domain(s) sent RETRY packets (R)\n", Results.RetryCount);
         }
     }
 
