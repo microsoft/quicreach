@@ -220,8 +220,12 @@ bool TestReachability(const ReachConfig& Config) {
             if (Retry) {
               ++Results.RetryCount;
             }
-            if (Config.PrintStatistics)
-                printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %c     %c",
+            if (Config.PrintStatistics){
+                char HandshakeTags[3] = {
+                    TooMuch ? '!' : (MultiRtt ? '*' : ' '),
+                    Retry ? 'R' : ' ',
+                    '\0'};
+                printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %s",
                     Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
                     InitialTime / 1000, InitialTime % 1000,
                     HandshakeTime / 1000, HandshakeTime % 1000,
@@ -233,8 +237,8 @@ bool TestReachability(const ReachConfig& Config) {
                     Connection.Stats.HandshakeClientFlight1Bytes,
                     Connection.Stats.HandshakeServerFlight1Bytes,
                     Connection.FamilyString,
-                    TooMuch ? '!' : (MultiRtt ? '*' : ' '),
-                    Retry ? 'R' : ' ');
+                    HandshakeTags);
+            }
         }
         if (Config.PrintStatistics) printf("\n");
     }
