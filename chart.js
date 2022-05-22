@@ -32,6 +32,12 @@ function createDataset() {
     };
 }
 
+function titlePlacement(tooltipItem, data) {
+    var dataset = data.datasets[tooltipItem[0].datasetIndex]
+    var datapoint = dataset.data[tooltipItem[0].index]
+    return new Date(datapoint.x).toString()
+}
+
 function createChart() {
     var datasets = []
     datasets.push(createDataset())
@@ -47,6 +53,13 @@ function createChart() {
                     gridLines: {
                       display: false,
                       drawBorder: false
+                    },
+                    ticks: {
+                        maxTicksLimit: dataMaxCount + 10,
+                        stepSize: 1,
+                        callback: function(value) {
+                            return new Date(value).toDateString()
+                        }
                     }
                 }],
                 yAxes: [{
@@ -73,7 +86,10 @@ function createChart() {
                 xPadding: 15,
                 yPadding: 15,
                 mode: "nearest",
-                intersect: false
+                intersect: false,
+                callbacks : {
+                    title: titlePlacement
+                }
             }
         }
     })
