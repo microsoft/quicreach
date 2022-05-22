@@ -55,8 +55,6 @@ function createChart() {
                       drawBorder: false
                     },
                     ticks: {
-                        maxTicksLimit: dataMaxCount + 10,
-                        stepSize: 1,
                         callback: function(value) {
                             return new Date(value).toDateString()
                         }
