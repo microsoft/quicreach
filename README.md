@@ -1,12 +1,13 @@
 # quicreach
 
+[![Dashboard](https://img.shields.io/static/v1?label=Reachability&message=Dashboard&color=blue)](https://microsoft.github.io/quicreach/)
 [![Build](https://github.com/microsoft/quicreach/actions/workflows/build.yml/badge.svg)](https://github.com/microsoft/quicreach/actions/workflows/build.yml)
 [![Reach](https://github.com/microsoft/quicreach/actions/workflows/reach.yml/badge.svg)](https://github.com/microsoft/quicreach/actions/workflows/reach.yml)
 
 This project has two primary purposes:
 
 1. It provides a complete (C++) client sample application built on top of [MsQuic](https://github.com/microsoft/msquic).
-2. It is a tool to test the QUIC reachability of a server (see latest data [here](https://github.com/microsoft/quicreach/blob/data/data.csv)).
+2. It is a tool to test the QUIC reachability of a server ([latest raw data](https://github.com/microsoft/quicreach/blob/data/data.csv)).
 
 # Build
 
