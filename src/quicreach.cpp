@@ -190,7 +190,7 @@ bool TestReachability(const ReachConfig& Config) {
     if (!Configuration.IsValid()) { printf("Configuration initializtion failed!\n"); return false; }
 
     if (Config.PrintStatistics)
-        printf("%30s           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1    FAMILY\n", "SERVER");
+        printf("%30s    Quic           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1    FAMILY\n", "SERVER");
 
     ReachResults Results;
     for (auto HostName : Config.HostNames) {
@@ -203,6 +203,7 @@ bool TestReachability(const ReachConfig& Config) {
         }
 
         Connection.WaitOnHandshakeComplete();
+        if (Config.PrintStatistics) printf("    %s", (Connection.HandshakeSuccess) ? "yes" : "no");
         if (Connection.HandshakeSuccess) {
             ++Results.ReachableCount;
             auto HandshakeTime = (uint32_t)(Connection.Stats.TimingHandshakeFlightEnd - Connection.Stats.TimingStart);
