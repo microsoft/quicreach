@@ -62,6 +62,12 @@ struct ReachResults {
             NotifyEvent.wait(lock, [this]() { return ActiveCount < Config.Parallel; });
         }
     }
+    void WaitForAll() {
+        while (ActiveCount) {
+            unique_lock<mutex> lock(Mutex);
+            NotifyEvent.wait(lock, [this]() { return ActiveCount == 0; });
+        }
+    }
     void IncActive() {
         lock_guard<mutex> lock(Mutex);
         ++ActiveCount;
@@ -276,6 +282,8 @@ bool TestReachability() {
         new ReachConnection(Registration, Configuration, HostName);
         Results.WaitForActiveCount();
     }
+
+    Results.WaitForAll();
 
     if (Config.PrintStatistics) {
         if (Results.ReachableCount > 1) {
