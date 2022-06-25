@@ -77,7 +77,7 @@ void IncStat( _Inout_ _Interlocked_operand_ uint32_t volatile &Addend) {
 #if _WIN32
     InterlockedIncrement((volatile long*)&Addend);
 #else
-    return __sync_add_and_fetch((long*)&Addend, (long)1);
+    __sync_add_and_fetch((long*)&Addend, (long)1);
 #endif
 }
 
@@ -155,8 +155,8 @@ bool ParseConfig(int argc, char **argv) {
 
 struct ReachConnection : public MsQuicConnection {
     const char* HostName;
+    bool HandshakeComplete {false};
     QUIC_STATISTICS_V2 Stats {0};
-    bool HandshakeComplete = false;
     ReachConnection(
         _In_ const MsQuicRegistration& Registration,
         _In_ const MsQuicConfiguration& Configuration,
@@ -181,7 +181,7 @@ struct ReachConnection : public MsQuicConnection {
             Connection->OnReachable();
             Connection->Shutdown(0);
         } else if (Event->Type == QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE) {
-            if (!Connection->HandshakeComplete && Config.PrintStatistics) printf("%30s\n", Connection->HostName);
+            if (!Connection->HandshakeComplete) Connection->OnUnreachable();
             Results.DecActive();
         } else if (Event->Type == QUIC_CONNECTION_EVENT_PEER_STREAM_STARTED) {
             MsQuic->StreamClose(Event->PEER_STREAM_STARTED.Stream); // Shouldn't do this
@@ -231,6 +231,12 @@ private:
                 RemoteAddr.GetFamily() == QUIC_ADDRESS_FAMILY_INET6 ? "IPv6" : "IPv4",
                 HandshakeTags);
         }
+    }
+    void OnUnreachable() {
+        if (Config.PrintStatistics) {
+            unique_lock<mutex> lock(Results.Mutex);
+            printf("%30s\n", HostName);
+        })
     }
 };
 
