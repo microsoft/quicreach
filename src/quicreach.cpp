@@ -236,7 +236,7 @@ private:
         if (Config.PrintStatistics) {
             unique_lock<mutex> lock(Results.Mutex);
             printf("%30s\n", HostName);
-        })
+        }
     }
 };
 
