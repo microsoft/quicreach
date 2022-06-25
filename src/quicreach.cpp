@@ -29,6 +29,7 @@ struct ReachConfig {
     bool PrintStatistics {false};
     bool RequireAll {false};
     std::vector<const char*> HostNames;
+    uint32_t Parallel {1};
     uint16_t Port {443};
     MsQuicAlpn Alpn {"h3"};
     MsQuicSettings Settings;
@@ -42,7 +43,7 @@ struct ReachConfig {
                                          1240 (QUIC) + 40 (IPv6) + 8 (UDP) */
         Settings.SetMaximumMtu(1500);
     }
-};
+} Config;
 
 struct ReachResults {
     uint32_t TotalCount {0};
@@ -50,15 +51,50 @@ struct ReachResults {
     uint32_t TooMuchCount {0};
     uint32_t MultiRttCount {0};
     uint32_t RetryCount {0};
-};
+    // Number of currently active connections.
+    uint32_t ActiveCount {0};
+    // Synchronization for active count.
+    mutex Mutex;
+    condition_variable NotifyEvent;
+    void WaitForActiveCount() {
+        while (ActiveCount >= Config.Parallel) {
+            unique_lock<mutex> lock(Mutex);
+            NotifyEvent.wait(lock, [this]() { return ActiveCount < Config.Parallel; });
+        }
+    }
+    void WaitForAll() {
+        while (ActiveCount) {
+            unique_lock<mutex> lock(Mutex);
+            NotifyEvent.wait(lock, [this]() { return ActiveCount == 0; });
+        }
+    }
+    void IncActive() {
+        lock_guard<mutex> lock(Mutex);
+        ++ActiveCount;
+    }
+    void DecActive() {
+        unique_lock<mutex> lock(Mutex);
+        ActiveCount--;
+        NotifyEvent.notify_all();
+    }
+} Results;
 
-bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
+void IncStat( _Inout_ _Interlocked_operand_ uint32_t volatile &Addend) {
+#if _WIN32
+    InterlockedIncrement((volatile long*)&Addend);
+#else
+    __sync_add_and_fetch((long*)&Addend, (long)1);
+#endif
+}
+
+bool ParseConfig(int argc, char **argv) {
     if (argc < 2 || !strcmp(argv[1], "-?") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
         printf("usage: quicreach <hostname(s)> [options...]\n"
                " -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)\n"
                " -b, --built-in-val     Use built-in TLS validation logic\n"
                " -f, --file <file>      Writes the results to the given file\n"
                " -h, --help             Prints this help text\n"
+               " -l, --parallel <num>   The numer of parallel hosts to do at once (def=1)\n"
                " -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)\n"
                " -p, --port <port>      The default UDP port to use\n"
                " -r, --req-all          Require all hostnames to succeed\n"
@@ -105,6 +141,10 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
             if (++i >= argc) { printf("Missing port number\n"); return false; }
             Config.Port = (uint16_t)atoi(argv[i]);
 
+        } else if (!strcmp(argv[i], "--parallel") || !strcmp(argv[i], "-l")) {
+            if (++i >= argc) { printf("Missing parallel number\n"); return false; }
+            Config.Parallel = (uint32_t)atoi(argv[i]);
+
         } else if (!strcmp(argv[i], "--stats") || !strcmp(argv[i], "-s")) {
             Config.PrintStatistics = true;
 
@@ -120,22 +160,22 @@ bool ParseConfig(int argc, char **argv, ReachConfig& Config) {
 }
 
 struct ReachConnection : public MsQuicConnection {
-    mutex HandshakeCompleteMutex;
-    condition_variable HandshakeCompleteEvent;
-    bool HandshakeSuccess {false};
+    const char* HostName;
+    bool HandshakeComplete {false};
     QUIC_STATISTICS_V2 Stats {0};
-    const char* FamilyString = "UNKN";
     ReachConnection(
-        _In_ const MsQuicRegistration& Registration
-    ) : MsQuicConnection(Registration, CleanUpManual, Callback) { }
-    void WaitOnHandshakeComplete() {
-        std::unique_lock Lock{HandshakeCompleteMutex};
-        HandshakeCompleteEvent.wait_for(Lock, chrono::seconds(1), [&]{return HandshakeComplete;});
-    }
-    void SetHandshakeComplete() {
-        std::lock_guard Lock{HandshakeCompleteMutex};
-        HandshakeComplete = true;
-        HandshakeCompleteEvent.notify_all();
+        _In_ const MsQuicRegistration& Registration,
+        _In_ const MsQuicConfiguration& Configuration,
+        _In_ const char* HostName
+    ) : MsQuicConnection(Registration, CleanUpAutoDelete, Callback), HostName(HostName) {
+        IncStat(Results.TotalCount);
+        Results.IncActive();
+        if (IsValid()) {
+            InitStatus = Start(Configuration, HostName, Config.Port);
+        }
+        if (!IsValid()) {
+            Results.DecActive();
+        }
     }
     static QUIC_STATUS QUIC_API Callback(
         _In_ MsQuicConnection* _Connection,
@@ -144,23 +184,69 @@ struct ReachConnection : public MsQuicConnection {
         ) noexcept {
         auto Connection = (ReachConnection*)_Connection;
         if (Event->Type == QUIC_CONNECTION_EVENT_CONNECTED) {
-            Connection->HandshakeSuccess = true;
-            Connection->GetStatistics(&Connection->Stats);
-            QuicAddr RemoteAddr;
-            if (QUIC_SUCCEEDED(Connection->GetRemoteAddr(RemoteAddr))) {
-                Connection->FamilyString = RemoteAddr.GetFamily() == QUIC_ADDRESS_FAMILY_INET6 ? "IPv6" : "IPv4";
-            }
-            Connection->SetHandshakeComplete();
+            Connection->OnReachable();
+            Connection->Shutdown(0);
         } else if (Event->Type == QUIC_CONNECTION_EVENT_SHUTDOWN_COMPLETE) {
-            Connection->SetHandshakeComplete();
+            if (!Connection->HandshakeComplete) Connection->OnUnreachable();
+            Results.DecActive();
         } else if (Event->Type == QUIC_CONNECTION_EVENT_PEER_STREAM_STARTED) {
             MsQuic->StreamClose(Event->PEER_STREAM_STARTED.Stream); // Shouldn't do this
         }
         return QUIC_STATUS_SUCCESS;
     }
+private:
+    void OnReachable() {
+        HandshakeComplete = true;
+        IncStat(Results.ReachableCount);
+        GetStatistics(&Stats);
+        QuicAddr RemoteAddr;
+        GetRemoteAddr(RemoteAddr);
+        auto HandshakeTime = (uint32_t)(Stats.TimingHandshakeFlightEnd - Stats.TimingStart);
+        auto InitialTime = (uint32_t)(Stats.TimingInitialFlightEnd - Stats.TimingStart);
+        auto Amplification = (double)Stats.RecvTotalBytes / (double)Stats.SendTotalBytes;
+        auto TooMuch = false, MultiRtt = false;
+        auto Retry = (bool)(Stats.StatelessRetry);
+        if (Stats.SendTotalPackets != 1) {
+            MultiRtt = true;
+            IncStat(Results.MultiRttCount);
+        } else {
+            TooMuch = Amplification > 3.0;
+            if (TooMuch) IncStat(Results.TooMuchCount);
+        }
+        if (Retry) {
+            IncStat(Results.RetryCount);
+        }
+        if (Config.PrintStatistics){
+            const char HandshakeTags[3] = {
+                TooMuch ? '!' : (MultiRtt ? '*' : ' '),
+                Retry ? 'R' : ' ',
+                '\0'};
+            unique_lock<mutex> lock(Results.Mutex);
+            printf("%30s    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %s\n",
+                HostName,
+                Stats.Rtt / 1000, Stats.Rtt % 1000,
+                InitialTime / 1000, InitialTime % 1000,
+                HandshakeTime / 1000, HandshakeTime % 1000,
+                (uint32_t)Stats.SendTotalPackets,
+                (uint32_t)Stats.RecvTotalPackets,
+                (uint32_t)Stats.SendTotalBytes,
+                (uint32_t)Stats.RecvTotalBytes,
+                Amplification,
+                Stats.HandshakeClientFlight1Bytes,
+                Stats.HandshakeServerFlight1Bytes,
+                RemoteAddr.GetFamily() == QUIC_ADDRESS_FAMILY_INET6 ? "IPv6" : "IPv4",
+                HandshakeTags);
+        }
+    }
+    void OnUnreachable() {
+        if (Config.PrintStatistics) {
+            unique_lock<mutex> lock(Results.Mutex);
+            printf("%30s\n", HostName);
+        }
+    }
 };
 
-void DumpResultsToFile(const ReachConfig &Config, const ReachResults &Results) {
+void DumpResultsToFile() {
     FILE* File = fopen(Config.OutputFile, "wx"); // Try to create a new file
     if (!File) {
         File = fopen(Config.OutputFile, "a"); // Open an existing file
@@ -184,7 +270,7 @@ void DumpResultsToFile(const ReachConfig &Config, const ReachResults &Results) {
 // - MsQuic should expose HRR flag for handshake?
 // - Figure out a way to fingerprint the server implementation?
 
-bool TestReachability(const ReachConfig& Config) {
+bool TestReachability() {
     MsQuicRegistration Registration("quicreach");
     MsQuicConfiguration Configuration(Registration, Config.Alpn, Config.Settings, MsQuicCredentialConfig(Config.CredFlags));
     if (!Configuration.IsValid()) { printf("Configuration initializtion failed!\n"); return false; }
@@ -192,56 +278,12 @@ bool TestReachability(const ReachConfig& Config) {
     if (Config.PrintStatistics)
         printf("%30s           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1    FAMILY\n", "SERVER");
 
-    ReachResults Results;
     for (auto HostName : Config.HostNames) {
-        ++Results.TotalCount;
-        if (Config.PrintStatistics) printf("%30s", HostName);
-        ReachConnection Connection(Registration);
-        if (!Connection.IsValid()) { printf("Connection initializtion failed!\n"); return false; }
-        if (QUIC_FAILED(Connection.Start(Configuration, HostName, Config.Port))) {
-            printf("Connection start failed!\n"); return false;
-        }
-
-        Connection.WaitOnHandshakeComplete();
-        if (Connection.HandshakeSuccess) {
-            ++Results.ReachableCount;
-            auto HandshakeTime = (uint32_t)(Connection.Stats.TimingHandshakeFlightEnd - Connection.Stats.TimingStart);
-            auto InitialTime = (uint32_t)(Connection.Stats.TimingInitialFlightEnd - Connection.Stats.TimingStart);
-            auto Amplification = (double)Connection.Stats.RecvTotalBytes / (double)Connection.Stats.SendTotalBytes;
-            auto TooMuch = false, MultiRtt = false;
-            auto Retry = (bool)(Connection.Stats.StatelessRetry);
-            if (Connection.Stats.SendTotalPackets != 1) {
-                MultiRtt = true;
-                ++Results.MultiRttCount;
-            } else {
-                TooMuch = Amplification > 3.0;
-                if (TooMuch) ++Results.TooMuchCount;
-            }
-            if (Retry) {
-              ++Results.RetryCount;
-            }
-            if (Config.PrintStatistics){
-                char HandshakeTags[3] = {
-                    TooMuch ? '!' : (MultiRtt ? '*' : ' '),
-                    Retry ? 'R' : ' ',
-                    '\0'};
-                printf("    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %s",
-                    Connection.Stats.Rtt / 1000, Connection.Stats.Rtt % 1000,
-                    InitialTime / 1000, InitialTime % 1000,
-                    HandshakeTime / 1000, HandshakeTime % 1000,
-                    (uint32_t)Connection.Stats.SendTotalPackets,
-                    (uint32_t)Connection.Stats.RecvTotalPackets,
-                    (uint32_t)Connection.Stats.SendTotalBytes,
-                    (uint32_t)Connection.Stats.RecvTotalBytes,
-                    Amplification,
-                    Connection.Stats.HandshakeClientFlight1Bytes,
-                    Connection.Stats.HandshakeServerFlight1Bytes,
-                    Connection.FamilyString,
-                    HandshakeTags);
-            }
-        }
-        if (Config.PrintStatistics) printf("\n");
+        new ReachConnection(Registration, Configuration, HostName);
+        Results.WaitForActiveCount();
     }
+
+    Results.WaitForAll();
 
     if (Config.PrintStatistics) {
         if (Results.ReachableCount > 1) {
@@ -257,15 +299,14 @@ bool TestReachability(const ReachConfig& Config) {
         }
     }
 
-    if (Config.OutputFile) DumpResultsToFile(Config, Results);
+    if (Config.OutputFile) DumpResultsToFile();
 
     return Config.RequireAll ? ((size_t)Results.ReachableCount == Config.HostNames.size()) : (Results.ReachableCount != 0);
 }
 
 int QUIC_CALL main(int argc, char **argv) {
 
-    ReachConfig Config;
-    if (!ParseConfig(argc, argv, Config)) return 1;
+    if (!ParseConfig(argc, argv)) return 1;
 
     MsQuic = new (std::nothrow) MsQuicApi();
     if (QUIC_FAILED(MsQuic->GetInitStatus())) {
@@ -273,7 +314,7 @@ int QUIC_CALL main(int argc, char **argv) {
         return 1;
     }
 
-    bool Result = TestReachability(Config);
+    bool Result = TestReachability();
     if (!Config.PrintStatistics) {
         printf("%s\n", Result ? "Success" : "Failure");
     }
