@@ -26,7 +26,7 @@ jobs:
     - name: Install
       run: cd build && sudo cmake --install . --config Debug
     - name: quicreach *
-      run: /usr/local/lib/quicreach '*' --stats --file build/data.csv
+      run: /usr/local/lib/quicreach '*' --parallel 8 --stats --file build/data.csv
     - name: Save results
       run: |
         git checkout data
