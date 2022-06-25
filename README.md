@@ -63,6 +63,7 @@ usage: quicreach <hostname(s)> [options...]
  -b, --built-in-val     Use built-in TLS validation logic
  -f, --file <file>      Writes the results to the given file
  -h, --help             Prints this help text
+ -l, --parallel <num>   The numer of parallel hosts to do at once (def=1)
  -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)
  -p, --port <port>      The default UDP port to use
  -r, --req-all          Require all hostnames to succeed
