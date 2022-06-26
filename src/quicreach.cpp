@@ -6,6 +6,7 @@
 --*/
 
 #define _CRT_SECURE_NO_WARNINGS 1
+#define QUIC_API_ENABLE_PREVIEW_FEATURES 1
 
 #include <stdio.h>
 #include <thread>
@@ -24,6 +25,13 @@
 using namespace std;
 
 const MsQuicApi* MsQuic;
+
+// TODO - Make these public?
+#define QUIC_VERSION_2          0x709a50c4U     // Second official version (host byte order)
+#define QUIC_VERSION_1          0x00000001U     // First official version (host byte order)
+
+const uint32_t SupportedVersions[] = {QUIC_VERSION_1, QUIC_VERSION_2};
+const MsQuicVersionSettings VersionSettings(SupportedVersions, 2);
 
 struct ReachConfig {
     bool PrintStatistics {false};
@@ -51,6 +59,8 @@ struct ReachResults {
     uint32_t TooMuchCount {0};
     uint32_t MultiRttCount {0};
     uint32_t RetryCount {0};
+    uint32_t IPv6Count {0};
+    uint32_t Quicv2Count {0};
     // Number of currently active connections.
     uint32_t ActiveCount {0};
     // Synchronization for active count.
@@ -201,6 +211,8 @@ private:
         GetStatistics(&Stats);
         QuicAddr RemoteAddr;
         GetRemoteAddr(RemoteAddr);
+        uint32_t Version, VersionLength = sizeof(Version);
+        GetParam(QUIC_PARAM_CONN_QUIC_VERSION, &VersionLength, &Version);
         auto HandshakeTime = (uint32_t)(Stats.TimingHandshakeFlightEnd - Stats.TimingStart);
         auto InitialTime = (uint32_t)(Stats.TimingInitialFlightEnd - Stats.TimingStart);
         auto Amplification = (double)Stats.RecvTotalBytes / (double)Stats.SendTotalBytes;
@@ -216,13 +228,19 @@ private:
         if (Retry) {
             IncStat(Results.RetryCount);
         }
+        if (RemoteAddr.GetFamily() == QUIC_ADDRESS_FAMILY_INET6) {
+            IncStat(Results.IPv6Count);
+        }
+        if (Version == QUIC_VERSION_2) {
+            IncStat(Results.Quicv2Count);
+        }
         if (Config.PrintStatistics){
             const char HandshakeTags[3] = {
                 TooMuch ? '!' : (MultiRtt ? '*' : ' '),
                 Retry ? 'R' : ' ',
                 '\0'};
             unique_lock<mutex> lock(Results.Mutex);
-            printf("%30s    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %s\n",
+            printf("%30s    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %s     %s\n",
                 HostName,
                 Stats.Rtt / 1000, Stats.Rtt % 1000,
                 InitialTime / 1000, InitialTime % 1000,
@@ -235,6 +253,7 @@ private:
                 Stats.HandshakeClientFlight1Bytes,
                 Stats.HandshakeServerFlight1Bytes,
                 RemoteAddr.GetFamily() == QUIC_ADDRESS_FAMILY_INET6 ? "IPv6" : "IPv4",
+                Version == QUIC_VERSION_1 ? "v1" : "v2",
                 HandshakeTags);
         }
     }
@@ -255,13 +274,14 @@ void DumpResultsToFile() {
             return;
         }
     } else {
-        fprintf(File, "UtcDateTime,Total,Reachable,TooMuch,MultiRtt,Retry\n");
+        fprintf(File, "UtcDateTime,Total,Reachable,TooMuch,MultiRtt,Retry,IPv6,QuicV2\n");
     }
     char UtcDateTime[256];
     time_t Time = time(nullptr);
     struct tm* Tm = gmtime(&Time);
     strftime(UtcDateTime, sizeof(UtcDateTime), "%Y.%m.%d-%H:%M:%S", Tm);
-    fprintf(File, "%s,%u,%u,%u,%u,%u\n", UtcDateTime, Results.TotalCount, Results.ReachableCount, Results.TooMuchCount, Results.MultiRttCount, Results.RetryCount);
+    fprintf(File, "%s,%u,%u,%u,%u,%u,%u,%u\n", UtcDateTime,
+        Results.TotalCount, Results.ReachableCount, Results.TooMuchCount, Results.MultiRttCount, Results.RetryCount, Results.IPv6Count, Results.Quicv2Count);
     fclose(File);
     printf("\nOutput written to %s\n", Config.OutputFile);
 }
@@ -274,9 +294,11 @@ bool TestReachability() {
     MsQuicRegistration Registration("quicreach");
     MsQuicConfiguration Configuration(Registration, Config.Alpn, Config.Settings, MsQuicCredentialConfig(Config.CredFlags));
     if (!Configuration.IsValid()) { printf("Configuration initializtion failed!\n"); return false; }
+    Configuration.SetVersionSettings(VersionSettings);
+    Configuration.SetVersionNegotiationExtEnabled();
 
     if (Config.PrintStatistics)
-        printf("%30s           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1    FAMILY\n", "SERVER");
+        printf("%30s           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1     FAM    VER\n", "SERVER");
 
     for (auto HostName : Config.HostNames) {
         new ReachConnection(Registration, Configuration, HostName);
@@ -296,6 +318,10 @@ bool TestReachability() {
                 printf("%4u domain(s) exceeded amplification limits (!)\n", Results.TooMuchCount);
             if (Results.RetryCount)
                 printf("%4u domain(s) sent RETRY packets (R)\n", Results.RetryCount);
+            if (Results.IPv6Count)
+                printf("%4u domain(s) used IPv6\n", Results.IPv6Count);
+            if (Results.Quicv2Count)
+                printf("%4u domain(s) used QUIC v2\n", Results.Quicv2Count);
         }
     }
 
