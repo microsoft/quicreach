@@ -42,7 +42,7 @@ struct ReachConfig {
     MsQuicAlpn Alpn {"h3"};
     MsQuicSettings Settings;
     QUIC_CREDENTIAL_FLAGS CredFlags {QUIC_CREDENTIAL_FLAG_CLIENT};
-    const char* OutputFile {nullptr};
+    const char* OutCsvFile {nullptr};
     ReachConfig() {
         Settings.SetDisconnectTimeoutMs(1000);
         Settings.SetHandshakeIdleTimeoutMs(1000);
@@ -102,11 +102,11 @@ bool ParseConfig(int argc, char **argv) {
         printf("usage: quicreach <hostname(s)> [options...]\n"
                " -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)\n"
                " -b, --built-in-val     Use built-in TLS validation logic\n"
-               " -f, --file <file>      Writes the results to the given file\n"
+               " -c, --csv <file>       Writes CSV results to the given file\n"
                " -h, --help             Prints this help text\n"
-               " -l, --parallel <num>   The numer of parallel hosts to do at once (def=1)\n"
+               " -l, --parallel <num>   The numer of parallel hosts to test at once (def=1)\n"
                " -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)\n"
-               " -p, --port <port>      The default UDP port to use\n"
+               " -p, --port <port>      The UDP port to use (def=443)\n"
                " -r, --req-all          Require all hostnames to succeed\n"
                " -s, --stats            Print connection statistics\n"
                " -u, --unsecure         Allows unsecure connections\n"
@@ -139,9 +139,9 @@ bool ParseConfig(int argc, char **argv) {
         } else if (!strcmp(argv[i], "--built-in-val") || !strcmp(argv[i], "-b")) {
             Config.CredFlags |= QUIC_CREDENTIAL_FLAG_USE_TLS_BUILTIN_CERTIFICATE_VALIDATION;
 
-        } else if (!strcmp(argv[i], "--file") || !strcmp(argv[i], "-f")) {
+        } else if (!strcmp(argv[i], "--csv") || !strcmp(argv[i], "-c")) {
             if (++i >= argc) { printf("Missing file name\n"); return false; }
-            Config.OutputFile = argv[i];
+            Config.OutCsvFile = argv[i];
 
         } else if (!strcmp(argv[i], "--mtu") || !strcmp(argv[i], "-m")) {
             if (++i >= argc) { printf("Missing MTU value\n"); return false; }
@@ -266,11 +266,11 @@ private:
 };
 
 void DumpResultsToFile() {
-    FILE* File = fopen(Config.OutputFile, "wx"); // Try to create a new file
+    FILE* File = fopen(Config.OutCsvFile, "wx"); // Try to create a new file
     if (!File) {
-        File = fopen(Config.OutputFile, "a"); // Open an existing file
+        File = fopen(Config.OutCsvFile, "a"); // Open an existing file
         if (!File) {
-            printf("Failed to open output file: %s\n", Config.OutputFile);
+            printf("Failed to open output file: %s\n", Config.OutCsvFile);
             return;
         }
     } else {
@@ -283,7 +283,7 @@ void DumpResultsToFile() {
     fprintf(File, "%s,%u,%u,%u,%u,%u,%u,%u\n", UtcDateTime,
         Results.TotalCount, Results.ReachableCount, Results.TooMuchCount, Results.MultiRttCount, Results.RetryCount, Results.IPv6Count, Results.Quicv2Count);
     fclose(File);
-    printf("\nOutput written to %s\n", Config.OutputFile);
+    printf("\nOutput written to %s\n", Config.OutCsvFile);
 }
 
 // TODO:
@@ -325,7 +325,7 @@ bool TestReachability() {
         }
     }
 
-    if (Config.OutputFile) DumpResultsToFile();
+    if (Config.OutCsvFile) DumpResultsToFile();
 
     return Config.RequireAll ? ((size_t)Results.ReachableCount == Config.HostNames.size()) : (Results.ReachableCount != 0);
 }

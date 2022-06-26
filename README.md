@@ -41,16 +41,16 @@ Failure
 
 ```Bash
 > quicreach '*' --stats
-                        SERVER           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1    FAMILY
-               quic.aiortc.org    102.082 ms    106.934 ms    240.379 ms    4:5 2523:4900 (1.9x)     274    4547    IPv6     *
-              ietf.akaquic.com     98.277 ms    100.906 ms    201.243 ms    3:5 2480:5869 (2.4x)     275    4564    IPv6     *
+                        SERVER           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1     FAM    VER
+               quic.aiortc.org    108.957 ms    114.643 ms    232.626 ms    3:5 2480:4899 (2.0x)     276    4546    IPv6     v1     *
+              ietf.akaquic.com
                  quic.ogre.com
                     quic.rocks
-                       mew.org    190.587 ms    190.857 ms    379.342 ms    4:6 2522:6650 (2.6x)     266    4541    IPv6     *
+                       mew.org    196.969 ms    198.060 ms    395.859 ms    3:6 2480:6650 (2.7x)     268    4539    IPv6     v2     *
   http3-test.litespeedtech.com
-                    msquic.net     76.161 ms     76.582 ms     78.957 ms    1:4 1260:3660 (2.9x)     269    3461    IPv4
+                    msquic.net     85.338 ms     87.281 ms     93.002 ms    1:4 1260:3660 (2.9x)     271    3460    IPv4     v1
                    nghttp2.org
-           cloudflare-quic.com     14.688 ms     19.289 ms     24.105 ms    3:7 2480:5129 (2.1x)     278    2667    IPv6     *
+           cloudflare-quic.com     12.880 ms     15.742 ms     22.834 ms    1:7 1240:5128 (4.1x)     280    2666    IPv6     v1     !
           pandora.cm.in.tum.de
 ```
 
@@ -61,11 +61,11 @@ Failure
 usage: quicreach <hostname(s)> [options...]
  -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)
  -b, --built-in-val     Use built-in TLS validation logic
- -f, --file <file>      Writes the results to the given file
+ -c, --csv <file>       Writes CSV results to the given file
  -h, --help             Prints this help text
- -l, --parallel <num>   The numer of parallel hosts to do at once (def=1)
+ -l, --parallel <num>   The numer of parallel hosts to test at once (def=1)
  -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)
- -p, --port <port>      The default UDP port to use
+ -p, --port <port>      The UDP port to use (def=443)
  -r, --req-all          Require all hostnames to succeed
  -s, --stats            Print connection statistics
  -u, --unsecure         Allows unsecure connections
