@@ -1,12 +1,18 @@
 
-
 // The latest raw data (to be read in from the data.csv file)
 var reachData = []
 
 // Fixed charting values
-var dataMaxCount = 50
+var dataMaxCount = 30
 var dataLineWidth = 2
-var dataRawPointRadius = 3
+var dataRawPointRadius = 0
+
+function generateUnreachabilityDataset() {
+    var output = []
+    reachData.forEach(
+        p => output.push({x:new Date(p.UtcDateTime), y:p.Total - p.Reachable}))
+    return output
+}
 
 function generateReachabilityDataset() {
     var output = []
@@ -15,17 +21,36 @@ function generateReachabilityDataset() {
     return output
 }
 
-function createDataset() {
+function generateGoodReachableDataset() {
+    var output = []
+    reachData.forEach(
+        p => output.push({x:new Date(p.UtcDateTime), y:p.Reachable - p.TooMuch - p.MultiRtt}))
+    return output
+}
+
+function generateTooMuchDataset() {
+    var output = []
+    reachData.forEach(
+        p => output.push({x:new Date(p.UtcDateTime), y:p.TooMuch}))
+    return output
+}
+
+function generateMultiRttDataset() {
+    var output = []
+    reachData.forEach(
+        p => output.push({x:new Date(p.UtcDateTime), y:p.MultiRtt}))
+    return output
+}
+
+function createDataset(name, data) {
     return {
         type: "line",
-        label: "Reachable",
-        backgroundColor: "#11a718",
-        borderColor: "#11a718",
+        label: name,
         borderWidth: dataLineWidth,
         pointRadius: dataRawPointRadius,
         tension: 0,
-        data: generateReachabilityDataset(),
-        fill: false,
+        data: data.slice(-dataMaxCount),
+        fill: true,
         sortOrder: 1,
         hidden: false,
         hiddenType: false
@@ -40,10 +65,14 @@ function titlePlacement(tooltipItem, data) {
 
 function createChart() {
     var datasets = []
-    datasets.push(createDataset())
+    //datasets.push(createDataset("Unreachable", generateUnreachabilityDataset()))
+    //datasets.push(createDataset("Reachable", generateReachabilityDataset()))
+    datasets.push(createDataset("Reachable", generateGoodReachableDataset()))
+    datasets.push(createDataset("Reachable (Too Much)", generateTooMuchDataset()))
+    datasets.push(createDataset("Reachable (Multi RTT)", generateMultiRttDataset()))
 
     new Chart(document.getElementById("canvasReachable").getContext('2d'), {
-        data: { datasets: datasets},
+        data: { datasets: datasets },
         options: {
             maintainAspectRatio: false,
             scales: {
@@ -61,6 +90,7 @@ function createChart() {
                     }
                 }],
                 yAxes: [{
+                    stacked: true,
                     gridLines: {
                         color: "rgb(234, 236, 244)",
                         zeroLineColor: "rgb(234, 236, 244)",
