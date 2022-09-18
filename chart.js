@@ -3,7 +3,7 @@
 var reachData = []
 
 // Fixed charting values
-var dataMaxCount = 30
+var dataMaxCount = 90
 var dataLineWidth = 2
 var dataRawPointRadius = 0
 
@@ -42,6 +42,13 @@ function generateMultiRttDataset() {
     return output
 }
 
+function generateQuicV2Dataset() {
+    var output = []
+    reachData.forEach(
+        p => output.push({x:new Date(p.UtcDateTime), y:p.QuicV2}))
+    return output
+}
+
 function createDataset(name, data) {
     return {
         type: "line",
@@ -63,22 +70,14 @@ function titlePlacement(tooltipItem, data) {
     return new Date(datapoint.x).toString()
 }
 
-function createChart() {
-    var datasets = []
-    //datasets.push(createDataset("Unreachable", generateUnreachabilityDataset()))
-    //datasets.push(createDataset("Reachable", generateReachabilityDataset()))
-    datasets.push(createDataset("Reachable", generateGoodReachableDataset()))
-    datasets.push(createDataset("Reachable (Too Much)", generateTooMuchDataset()))
-    datasets.push(createDataset("Reachable (Multi RTT)", generateMultiRttDataset()))
-
-    new Chart(document.getElementById("canvasReachable").getContext('2d'), {
-        data: { datasets: datasets },
+function createChartwithData(elementId, dataset, displayLegend) {
+    new Chart(document.getElementById(elementId).getContext('2d'), {
+        data: { datasets: dataset },
         options: {
             maintainAspectRatio: false,
             scales: {
                 xAxes: [{
                     type: 'linear',
-                    offset: true,
                     gridLines: {
                       display: false,
                       drawBorder: false
@@ -101,7 +100,7 @@ function createChart() {
                 }]
             },
             legend: {
-              display: false
+              display: displayLegend
             },
             tooltips: {
                 backgroundColor: "rgb(255,255,255)",
@@ -111,8 +110,6 @@ function createChart() {
                 titleFontSize: 14,
                 borderColor: '#dddfeb',
                 borderWidth: 1,
-                xPadding: 15,
-                yPadding: 15,
                 mode: "nearest",
                 intersect: false,
                 callbacks : {
@@ -121,6 +118,22 @@ function createChart() {
             }
         }
     })
+}
+
+function createChart() {
+    var reachable = []
+    reachable.push(createDataset("Reachable", generateReachabilityDataset()))
+    createChartwithData("canvasReachable", reachable, false)
+
+    var breakdown = []
+    breakdown.push(createDataset("Reachable", generateGoodReachableDataset()))
+    breakdown.push(createDataset("Reachable (Too Much)", generateTooMuchDataset()))
+    breakdown.push(createDataset("Reachable (Multi RTT)", generateMultiRttDataset()))
+    createChartwithData("canvasReachBreakdown", breakdown, true)
+
+    var quicv2 = []
+    quicv2.push(createDataset("Version 2", generateQuicV2Dataset()))
+    createChartwithData("canvasQuicV2", quicv2, false)
 }
 
 function processSearchParams() {
