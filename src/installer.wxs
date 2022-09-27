@@ -14,7 +14,7 @@
     <MediaTemplate EmbedCab="yes" />
 
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder">
+      <Directory Id="SystemFolder64">
         <Directory Id="INSTALLFOLDER" Name="quicreach">
           <Component Id="ProductComponent">
             <File KeyPath="yes" Source="quicreach.exe"></File>
