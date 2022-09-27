@@ -16,6 +16,8 @@
 #include <msquic.hpp>
 #include "domains.hpp"
 
+#define QUICREACH_VERSION "1.1.0"
+
 #ifdef _WIN32
 #define QUIC_CALL __cdecl
 #else
@@ -97,6 +99,24 @@ void IncStat( _Inout_ _Interlocked_operand_ uint32_t volatile &Addend) {
 #endif
 }
 
+void AddHostName(const char* arg) {
+    // Parse hostname(s), treating '*' as all top-level domains.
+    if (!strcmp(arg, "*")) {
+        for (auto Domain : TopDomains) {
+            Config.HostNames.push_back(Domain);
+        }
+    } else {
+        char* HostName = (char*)arg;
+        do {
+            char* End = strchr(HostName, ',');
+            if (End) *End = 0;
+            Config.HostNames.push_back(HostName);
+            if (!End) break;
+            HostName = End + 1;
+        } while (true);
+    }
+}
+
 bool ParseConfig(int argc, char **argv) {
     if (argc < 2 || !strcmp(argv[1], "-?") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
         printf("usage: quicreach <hostname(s)> [options...]\n"
@@ -110,29 +130,16 @@ bool ParseConfig(int argc, char **argv) {
                " -r, --req-all          Require all hostnames to succeed\n"
                " -s, --stats            Print connection statistics\n"
                " -u, --unsecure         Allows unsecure connections\n"
+               " -v, --version          Prints out the version\n"
               );
         return false;
     }
 
-    // Parse hostname(s), treating '*' as all top-level domains.
-    if (!strcmp(argv[1], "*")) {
-        for (auto Domain : TopDomains) {
-            Config.HostNames.push_back(Domain);
-        }
-    } else {
-        char* HostName = (char*)argv[1];
-        do {
-            char* End = strchr(HostName, ',');
-            if (End) *End = 0;
-            Config.HostNames.push_back(HostName);
-            if (!End) break;
-            HostName = End + 1;
-        } while (true);
-    }
+    for (int i = 1; i < argc; ++i) {
+        if (argv[i][0] != '-') {
+            AddHostName(argv[i]);
 
-    // Parse options.
-    for (int i = 2; i < argc; ++i) {
-        if (!strcmp(argv[i], "--alpn") || !strcmp(argv[i], "-a")) {
+        } else if (!strcmp(argv[i], "--alpn") || !strcmp(argv[i], "-a")) {
             if (++i >= argc) { printf("Missing ALPN string\n"); return false; }
             Config.Alpn = argv[i];
 
@@ -163,6 +170,9 @@ bool ParseConfig(int argc, char **argv) {
 
         } else if (!strcmp(argv[i], "--unsecure") || !strcmp(argv[i], "-u")) {
             Config.CredFlags |= QUIC_CREDENTIAL_FLAG_NO_CERTIFICATE_VALIDATION;
+
+        } else if (!strcmp(argv[i], "--version") || !strcmp(argv[i], "-v")) {
+            printf("quicreach " QUICREACH_VERSION "\n");
         }
     }
 
@@ -332,7 +342,7 @@ bool TestReachability() {
 
 int QUIC_CALL main(int argc, char **argv) {
 
-    if (!ParseConfig(argc, argv)) return 1;
+    if (!ParseConfig(argc, argv) || Config.HostNames.empty()) return 1;
 
     MsQuic = new (std::nothrow) MsQuicApi();
     if (QUIC_FAILED(MsQuic->GetInitStatus())) {
