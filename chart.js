@@ -56,11 +56,7 @@ function createDataset(name, data) {
         borderWidth: dataLineWidth,
         pointRadius: dataRawPointRadius,
         tension: 0,
-        data: data.slice(-dataMaxCount),
-        fill: true,
-        sortOrder: 1,
-        hidden: false,
-        hiddenType: false
+        data: data.slice(-dataMaxCount)
     };
 }
 
@@ -70,7 +66,7 @@ function titlePlacement(tooltipItem, data) {
     return new Date(datapoint.x).toString()
 }
 
-function createChartwithData(elementId, dataset, displayLegend) {
+function createChartwithData(elementId, dataset, displayLegend, stacked) {
     new Chart(document.getElementById(elementId).getContext('2d'), {
         data: { datasets: dataset },
         options: {
@@ -89,7 +85,7 @@ function createChartwithData(elementId, dataset, displayLegend) {
                     }
                 }],
                 yAxes: [{
-                    stacked: true,
+                    stacked: stacked,
                     gridLines: {
                         color: "rgb(234, 236, 244)",
                         zeroLineColor: "rgb(234, 236, 244)",
@@ -123,17 +119,17 @@ function createChartwithData(elementId, dataset, displayLegend) {
 function createChart() {
     var reachable = []
     reachable.push(createDataset("Reachable", generateReachabilityDataset()))
-    createChartwithData("canvasReachable", reachable, false)
+    createChartwithData("canvasReachable", reachable, false, false)
 
     var breakdown = []
     breakdown.push(createDataset("Reachable", generateGoodReachableDataset()))
     breakdown.push(createDataset("Reachable (Too Much)", generateTooMuchDataset()))
     breakdown.push(createDataset("Reachable (Multi RTT)", generateMultiRttDataset()))
-    createChartwithData("canvasReachBreakdown", breakdown, true)
+    createChartwithData("canvasReachBreakdown", breakdown, true, true)
 
     var quicv2 = []
     quicv2.push(createDataset("Version 2", generateQuicV2Dataset()))
-    createChartwithData("canvasQuicV2", quicv2, false)
+    createChartwithData("canvasQuicV2", quicv2, false, true)
 }
 
 function processSearchParams() {
