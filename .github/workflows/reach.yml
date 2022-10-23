@@ -11,7 +11,7 @@ permissions: read-all
 jobs:
   reach-linux-openssl:
     permissions: write-all
-    name: Top 1000 Reachability Test
+    name: Top 1000 Reachability Test (Linux-OpenSSL)
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
@@ -39,3 +39,23 @@ jobs:
         git commit -m "Latest Reachability Results"
         git push
         git checkout main
+  reach-windows-schannel:
+    permissions: write-all
+    name: Top 1000 Reachability Test (Windows-Schannel)
+    needs: []
+    runs-on: windows-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+      with:
+        fetch-depth: 0
+        submodules: 'recursive'
+    - name: Generate
+      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_TLS=schannel ..
+    - name: Build
+      run: cd build && cmake --build . --config Debug
+    - name: Install
+      run: cd build && cmake --install . --config Debug
+    - name: quicreach *
+      run: |
+        & 'C:/Program Files/quicreach/lib/quicreach' '*' --parallel 8 --stats --csv build/data.csv
