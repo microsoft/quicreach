@@ -61,7 +61,7 @@ jobs:
         & 'C:/Program Files (x86)/WiX Toolset v3.11/bin/candle.exe' ../src/installer.wxs -o src/Release/quicreach.wixobj
         & 'C:/Program Files (x86)/WiX Toolset v3.11/bin/light.exe' -b src/Release -o src/Release/quicreach.msi src/Release/quicreach.wixobj
     - name: Upload
-      uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
       with:
         name: bin-${{ matrix.os }}-${{ matrix.tls }}-shared_${{ matrix.shared }}
         path: |
