@@ -10,11 +10,13 @@
     <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
     <MediaTemplate EmbedCab="yes" />
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder">
-        <Directory Id="INSTALLFOLDER" Name="quicreach">
-          <Component Id="ProductComponent" Guid='4c39c05d-c4bd-44d2-aba6-78abbb0c0d21'>
-            <File KeyPath="yes" Source="quicreach.exe"></File>
-          </Component>
+      <Directory Id="LocalAppDataFolder">
+        <Directory Id="COMPANYFOLDER" Name="Microsoft">
+          <Directory Id="INSTALLFOLDER" Name="quicreach">
+            <Component Id="ProductComponent" Guid='4c39c05d-c4bd-44d2-aba6-78abbb0c0d21'>
+              <File KeyPath="yes" Source="quicreach.exe"></File>
+            </Component>
+          </Directory>
         </Directory>
       </Directory>
     </Directory>
