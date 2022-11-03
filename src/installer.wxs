@@ -19,8 +19,7 @@
                              Value='[INSTALLFOLDER]'
                              Type='string'
                              KeyPath='yes' />
-              <File Source="quicreach.exe"></File>
-              <RemoveFolder Id="COMPANYFOLDER" On="uninstall"/>
+              <RemoveFolder Id="COMPANYFOLDER" Directory='COMPANYFOLDER' On="uninstall"/>
               <RemoveFolder Id="INSTALLFOLDER" On="uninstall"/>
             </Component>
           </Directory>
