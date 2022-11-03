@@ -2,7 +2,7 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Product Id="*"
            Language="1033"
-           Manufacturer="Microsoft Corporation"
+           Manufacturer="Microsoft"
            Name="quicreach"
            UpgradeCode="8395c163-ac9f-4a89-82fc-689fe25f0777"
            Version="1.1.0.0">
@@ -10,14 +10,15 @@
     <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="LocalAppDataFolder">
-        <Directory Id="COMPANYFOLDER" Name="Microsoft">
-          <Directory Id="INSTALLFOLDER" Name="quicreach">
+        <Directory Id="COMPANYFOLDER" Name="[Manufacturer]">
+          <Directory Id="INSTALLFOLDER" Name="[ProductName]">
             <Component Id="ProductComponent" Guid='4c39c05d-c4bd-44d2-aba6-78abbb0c0d21'>
-              <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[Product]'
+              <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]'
                              Name='InstallFolder'
                              Value='[INSTALLFOLDER]'
                              Type='string'
                              KeyPath='yes' />
+              <File Source="quicreach.exe" />
               <RemoveFolder Id="COMPANYFOLDER" Directory='COMPANYFOLDER' On="uninstall"/>
               <RemoveFolder Id="INSTALLFOLDER" On="uninstall"/>
             </Component>
