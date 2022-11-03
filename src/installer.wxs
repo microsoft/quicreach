@@ -5,7 +5,7 @@
            Manufacturer="Microsoft"
            Name="quicreach"
            UpgradeCode="8395c163-ac9f-4a89-82fc-689fe25f0777"
-           Version="1.1.0.0">
+           Version="1.1.1.0">
     <Package InstallScope="perUser" Compressed="yes" />
     <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
     <Directory Id="TARGETDIR" Name="SourceDir">
