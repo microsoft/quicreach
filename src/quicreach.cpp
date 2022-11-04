@@ -7,6 +7,7 @@
 
 #define _CRT_SECURE_NO_WARNINGS 1
 #define QUIC_API_ENABLE_PREVIEW_FEATURES 1
+#define QUICREACH_VERSION_ONLY 1
 
 #include <stdio.h>
 #include <thread>
@@ -14,9 +15,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <msquic.hpp>
+#include "quicreach.ver"
 #include "domains.hpp"
-
-#define QUICREACH_VERSION "1.1.0"
 
 #ifdef _WIN32
 #define QUIC_CALL __cdecl
