@@ -16,6 +16,12 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 # outside the build tree to the install RPATH.
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+if (WIN32)
+    # Statically link the OS included part of the runtime.
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /NODEFAULTLIB:libucrt.lib /DEFAULTLIB:ucrt.lib")
+endif()
+
 # Configure and build msquic dependency.
 if (WIN32)
     set(QUIC_TLS "schannel" CACHE STRING "TLS Library to use")
