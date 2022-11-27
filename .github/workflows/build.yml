@@ -34,7 +34,7 @@ jobs:
         submodules: 'recursive'
     - name: Install Perl
       if: runner.os == 'Windows'
-      uses: shogo82148/actions-setup-perl@9ebc752abbacef1f1fcbc8201bf6622c9f0b440b
+      uses: shogo82148/actions-setup-perl@2489d8800e697ae6af4c9bad542615c57eb9ad33
       with:
         perl-version: '5.34'
     - name: Install NASM
