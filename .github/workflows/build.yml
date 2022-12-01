@@ -60,10 +60,10 @@ jobs:
       if: runner.os == 'Linux'
       run: /usr/local/lib/quicreach outlook-evergreen.office.com,www.cloudflare.com,www.google.com --req-all --stats
     - name: Test (Windows, x64)
-      if: runner.os == 'Windows' && ${{ matrix.arch }} != 'x86'
+      if: ${{ runner.os == 'Windows' && matrix.arch != 'x86' }}
       run: |
         & 'C:/Program Files/quicreach/lib/quicreach' outlook-evergreen.office.com,www.cloudflare.com,www.google.com --req-all --stats
     - name: Test (Windows, x86)
-      if: runner.os == 'Windows' && ${{ matrix.arch }} == 'x86'
+      if: ${{ runner.os == 'Windows' && matrix.arch == 'x86' }}
       run: |
         & 'C:/Program Files (x86)/quicreach/lib/quicreach' outlook-evergreen.office.com,www.cloudflare.com,www.google.com --req-all --stats
