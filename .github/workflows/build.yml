@@ -21,7 +21,7 @@ jobs:
         - os: ubuntu
           tls: schannel
         - os: ubuntu
-          arc: x86
+          arch: x86
     permissions:
       contents: read
     name: Build
