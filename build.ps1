@@ -53,7 +53,7 @@ if ($IsWindows) {
 
     if ($Arch -eq "x86") { $Arch = "Win32" }
     Execute "cmake" "-G ""Visual Studio 17 2022"" -A $Arch -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
-    Execute "cmake" "--build . --config Release"
+    Execute "cmake" "--build . --config $Config"
 
     if ($BuildInstaller) {
         Execute 'C:/Program Files (x86)/WiX Toolset v3.11/bin/candle.exe' "../src/installer.wxs -o src/Release/quicreach.wixobj"
@@ -62,9 +62,10 @@ if ($IsWindows) {
 
 } else {
 
-    if ($Config -eq "Release") { $Config = "RelWithDebInfo" }
-    Execute "cmake" "-G ""Unix Makefiles"" -DCMAKE_BUILD_TYPE=$Config -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
+    $BuildType = $Config
+    if ($BuildType -eq "Release") { $BuildType = "RelWithDebInfo" }
+    Execute "cmake" "-G ""Unix Makefiles"" -DCMAKE_BUILD_TYPE=$BuildType -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
     Execute "cmake" "--build ."
 }
 
-if ($Install -eq "x86") { Execute "cmake" "--install . --config Release" }
+if ($Install) { Execute "cmake" "--install . --config Release" }
