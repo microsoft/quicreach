@@ -14,11 +14,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu, windows]
+        arch: [x86, x64]
         tls: [schannel, openssl]
-        shared: [on, off]
+        link: [static, shared]
         exclude:
         - os: ubuntu
           tls: schannel
+        - os: ubuntu
+          arc: x86
     permissions:
       contents: read
     name: Build
@@ -40,30 +43,12 @@ jobs:
     - name: Install NASM
       if: runner.os == 'Windows'
       uses: ilammy/setup-nasm@321e6ed62a1fc77024a3bd853deb33645e8b22c4
-    - name: Build (Linux)
-      if: runner.os == 'Linux'
-      run: |
-        mkdir build && cd build
-        cmake -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=RelWithDebInfo -DQUIC_TLS=${{ matrix.tls }} -DQUIC_BUILD_SHARED=${{ matrix.shared }} ..
-        cmake --build .
-        sudo cmake --install . --config Release
-    - name: Build (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        mkdir build && cd build
-        cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_TLS=${{ matrix.tls }} -DQUIC_BUILD_SHARED=${{ matrix.shared }} ..
-        cmake --build . --config Release
-        cmake --install . --config Release
-    - name: Build Windows Installer
-      if: runner.os == 'Windows'
-      run: |
-        cd build
-        & 'C:/Program Files (x86)/WiX Toolset v3.11/bin/candle.exe' ../src/installer.wxs -o src/Release/quicreach.wixobj
-        & 'C:/Program Files (x86)/WiX Toolset v3.11/bin/light.exe' -b src/Release -o src/Release/quicreach.msi src/Release/quicreach.wixobj
+    - name: Build
+      run: build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }} -$Install -BuildInstaller
     - name: Upload
       uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
       with:
-        name: bin-${{ matrix.os }}-${{ matrix.tls }}-shared_${{ matrix.shared }}
+        name: bin-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.tls }}-${{ matrix.shared }}
         path: |
           build/**/*.so
           build/**/*.dll
