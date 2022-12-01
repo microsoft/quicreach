@@ -51,8 +51,9 @@ function Execute([String]$Name, [String]$Arguments) {
 
 if ($IsWindows) {
 
-    if ($Arch -eq "x86") { $Arch = "Win32" }
-    Execute "cmake" "-G ""Visual Studio 17 2022"" -A $Arch -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
+    $_Arch = $Arch
+    if ($_Arch -eq "x86") { $_Arch = "Win32" }
+    Execute "cmake" "-G ""Visual Studio 17 2022"" -A $_Arch -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
     Execute "cmake" "--build . --config $Config"
 
     if ($BuildInstaller) {
@@ -60,12 +61,14 @@ if ($IsWindows) {
         Execute 'C:/Program Files (x86)/WiX Toolset v3.11/bin/light.exe' "-b src/Release -o src/Release/quicreach.msi src/Release/quicreach.wixobj"
     }
 
+    if ($Install) { Execute "cmake" "--install . --config Release" }
+
 } else {
 
     $BuildType = $Config
     if ($BuildType -eq "Release") { $BuildType = "RelWithDebInfo" }
     Execute "cmake" "-G ""Unix Makefiles"" -DCMAKE_BUILD_TYPE=$BuildType -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
     Execute "cmake" "--build ."
-}
 
-if ($Install) { Execute "cmake" "--install . --config Release" }
+    if ($Install) { Execute "sudo" "cmake --install . --config Release" }
+}
