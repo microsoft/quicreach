@@ -45,7 +45,7 @@ jobs:
       uses: ilammy/setup-nasm@321e6ed62a1fc77024a3bd853deb33645e8b22c4
     - name: Build
       shell: pwsh
-      run: ./build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }} -$Install -BuildInstaller
+      run: ./build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }} -Install -BuildInstaller -Debug
     - name: Upload
       uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
       with:
