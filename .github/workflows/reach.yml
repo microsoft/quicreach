@@ -4,7 +4,7 @@ on:
   push:
     branches: main
   schedule:
-    - cron: '0 0 * * *' # every day at midnight
+    - cron: '0 */8 * * *' # every 8 hours
 
 permissions: read-all
 
