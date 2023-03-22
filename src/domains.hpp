@@ -7,28 +7,6 @@
 
 const char* TopDomains[] =
 {
-    // Known interop servers
-    "quic.aiortc.org",
-    "ietf.akaquic.com",
-    "quic.ogre.com",
-    "quic.rocks",
-    "mew.org",
-    "http3-test.litespeedtech.com",
-    "msquic.net",
-    "nghttp2.org",
-    "cloudflare-quic.com",
-    "pandora.cm.in.tum.de",
-    "test.privateoctopus.com",
-    "quant.eggert.org",
-    "h3.stammw.eu",
-    "quic.seemann.io",
-    "quic.tech",
-    "quicker.edm.uhasselt.be",
-    "quic.examp1e.net",
-    "h2o.examp1e.net",
-    "www.haproxy.org",
-    "outlook-evergreen.office.com",
-    "outlook.office.com",
     // Top-level domains - found on https://majestic.com/reports/majestic-million?s=0
     // data are processed such that root domains appear only once
     "google.com",
@@ -100,6 +78,7 @@ const char* TopDomains[] =
     "youtube-nocookie.com",
     "oracle.com",
     "office.com",
+    "outlook.office.com", // Extra variant known to support HTTP/3
     "bloomberg.com",
     "harvard.edu",
     "imdb.com",

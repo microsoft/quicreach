@@ -39,6 +39,7 @@ struct ReachConfig {
     bool PrintStatistics {false};
     bool RequireAll {false};
     std::vector<const char*> HostNames;
+    QuicAddr Address;
     uint32_t Parallel {1};
     uint16_t Port {443};
     MsQuicAlpn Alpn {"h3"};
@@ -124,6 +125,7 @@ bool ParseConfig(int argc, char **argv) {
                " -b, --built-in-val     Use built-in TLS validation logic\n"
                " -c, --csv <file>       Writes CSV results to the given file\n"
                " -h, --help             Prints this help text\n"
+               " -i, --ip <address>     The IP address to use\n"
                " -l, --parallel <num>   The numer of parallel hosts to test at once (def=1)\n"
                " -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)\n"
                " -p, --port <port>      The UDP port to use (def=443)\n"
@@ -154,13 +156,19 @@ bool ParseConfig(int argc, char **argv) {
             if (++i >= argc) { printf("Missing MTU value\n"); return false; }
             Config.Settings.SetMinimumMtu((uint16_t)atoi(argv[i]));
 
-        } else if (!strcmp(argv[i], "--port") || !strcmp(argv[i], "-p")) {
-            if (++i >= argc) { printf("Missing port number\n"); return false; }
-            Config.Port = (uint16_t)atoi(argv[i]);
+        } else if (!strcmp(argv[i], "--ip") || !strcmp(argv[i], "-i")) {
+            if (++i >= argc) { printf("Missing IP address\n"); return false; }
+            if (!QuicAddrFromString(argv[i], 0, &Config.Address.SockAddr)) {
+                printf("Invalid address arg passed in\n"); return false;
+            }
 
         } else if (!strcmp(argv[i], "--parallel") || !strcmp(argv[i], "-l")) {
             if (++i >= argc) { printf("Missing parallel number\n"); return false; }
             Config.Parallel = (uint32_t)atoi(argv[i]);
+
+        } else if (!strcmp(argv[i], "--port") || !strcmp(argv[i], "-p")) {
+            if (++i >= argc) { printf("Missing port number\n"); return false; }
+            Config.Port = (uint16_t)atoi(argv[i]);
 
         } else if (!strcmp(argv[i], "--stats") || !strcmp(argv[i], "-s")) {
             Config.PrintStatistics = true;
@@ -190,6 +198,9 @@ struct ReachConnection : public MsQuicConnection {
     ) : MsQuicConnection(Registration, CleanUpAutoDelete, Callback), HostName(HostName) {
         IncStat(Results.TotalCount);
         Results.IncActive();
+        if (IsValid() && Config.Address.GetFamily() != QUIC_ADDRESS_FAMILY_UNSPEC) {
+            InitStatus = SetRemoteAddr(Config.Address);
+        }
         if (IsValid()) {
             InitStatus = Start(Configuration, HostName, Config.Port);
         }
@@ -249,8 +260,10 @@ private:
                 TooMuch ? '!' : (MultiRtt ? '*' : ' '),
                 Retry ? 'R' : ' ',
                 '\0'};
+            QUIC_ADDR_STR AddrStr;
+            QuicAddrToString(&RemoteAddr.SockAddr, &AddrStr);
             unique_lock<mutex> lock(Results.Mutex);
-            printf("%30s    %3u.%03u ms    %3u.%03u ms    %3u.%03u ms    %u:%u %u:%u (%2.1fx)    %4u    %4u    %s     %s     %s\n",
+            printf("%30s   %3u.%03u ms   %3u.%03u ms   %3u.%03u ms   %u:%u %u:%u (%2.1fx)  %4u   %4u     %s   %20s   %s\n",
                 HostName,
                 Stats.Rtt / 1000, Stats.Rtt % 1000,
                 InitialTime / 1000, InitialTime % 1000,
@@ -262,8 +275,8 @@ private:
                 Amplification,
                 Stats.HandshakeClientFlight1Bytes,
                 Stats.HandshakeServerFlight1Bytes,
-                RemoteAddr.GetFamily() == QUIC_ADDRESS_FAMILY_INET6 ? "IPv6" : "IPv4",
                 Version == QUIC_VERSION_1 ? "v1" : "v2",
+                AddrStr.Address,
                 HandshakeTags);
         }
     }
@@ -308,7 +321,7 @@ bool TestReachability() {
     Configuration.SetVersionNegotiationExtEnabled();
 
     if (Config.PrintStatistics)
-        printf("%30s           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1     FAM    VER\n", "SERVER");
+        printf("%30s          RTT       TIME_I       TIME_H              SEND:RECV    C1     S1    VER                     IP\n", "SERVER");
 
     for (auto HostName : Config.HostNames) {
         new ReachConnection(Registration, Configuration, HostName);

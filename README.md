@@ -41,17 +41,12 @@ Failure
 
 ```Bash
 > quicreach '*' --stats
-                        SERVER           RTT        TIME_I        TIME_H               SEND:RECV      C1      S1     FAM    VER
-               quic.aiortc.org    108.957 ms    114.643 ms    232.626 ms    3:5 2480:4899 (2.0x)     276    4546    IPv6     v1     *
-              ietf.akaquic.com
-                 quic.ogre.com
-                    quic.rocks
-                       mew.org    196.969 ms    198.060 ms    395.859 ms    3:6 2480:6650 (2.7x)     268    4539    IPv6     v2     *
-  http3-test.litespeedtech.com
-                    msquic.net     85.338 ms     87.281 ms     93.002 ms    1:4 1260:3660 (2.9x)     271    3460    IPv4     v1
-                   nghttp2.org
-           cloudflare-quic.com     12.880 ms     15.742 ms     22.834 ms    1:7 1240:5128 (4.1x)     280    2666    IPv6     v1     !
-          pandora.cm.in.tum.de
+                        SERVER          RTT       TIME_I       TIME_H              SEND:RECV    C1     S1    VER                     IP
+                    google.com     2.409 ms     2.936 ms     5.461 ms   3:7 2520:8370 (3.3x)   287   6901     v1     172.253.62.102:443   *
+                  facebook.com     1.845 ms     4.250 ms     4.722 ms   1:4 1260:4512 (3.6x)   289   3245     v1        31.13.66.35:443   !
+                   youtube.com     2.702 ms     3.020 ms     6.491 ms   3:7 2520:8361 (3.3x)   288   6893     v1     142.251.163.93:443   *
+                   twitter.com
+                 instagram.com     0.944 ms     3.259 ms     3.717 ms   1:4 1260:4464 (3.5x)   290   3197     v1       31.13.66.174:443   !
 ```
 
 ### Full Help
@@ -63,12 +58,14 @@ usage: quicreach <hostname(s)> [options...]
  -b, --built-in-val     Use built-in TLS validation logic
  -c, --csv <file>       Writes CSV results to the given file
  -h, --help             Prints this help text
+ -i, --ip <address>     The IP address to use
  -l, --parallel <num>   The numer of parallel hosts to test at once (def=1)
  -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)
  -p, --port <port>      The UDP port to use (def=443)
  -r, --req-all          Require all hostnames to succeed
  -s, --stats            Print connection statistics
  -u, --unsecure         Allows unsecure connections
+ -v, --version          Prints out the version
 ```
 
 # Contributing
