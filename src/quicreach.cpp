@@ -29,7 +29,7 @@ using namespace std;
 const MsQuicApi* MsQuic;
 
 // TODO - Make these public?
-#define QUIC_VERSION_2          0x709a50c4U     // Second official version (host byte order)
+#define QUIC_VERSION_2          0x6b3343cfU     // Second official version (host byte order)
 #define QUIC_VERSION_1          0x00000001U     // First official version (host byte order)
 
 const uint32_t SupportedVersions[] = {QUIC_VERSION_1, QUIC_VERSION_2};
