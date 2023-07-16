@@ -3,7 +3,7 @@
 var reachData = []
 
 // Fixed charting values
-var dataMaxCount = 90
+var dataMaxCount = 180
 var dataLineWidth = 2
 var dataRawPointRadius = 0
 
