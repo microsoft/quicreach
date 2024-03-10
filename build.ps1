@@ -57,8 +57,8 @@ if ($IsWindows) {
     Execute "cmake" "--build . --config $Config"
 
     if ($BuildInstaller) {
-        Execute 'C:/Program Files (x86)/WiX Toolset v3.11/bin/candle.exe' "../src/installer.wxs -o src/Release/quicreach.wixobj"
-        Execute 'C:/Program Files (x86)/WiX Toolset v3.11/bin/light.exe' "-b src/Release -o src/Release/quicreach.msi src/Release/quicreach.wixobj"
+        Execute 'C:/Program Files (x86)/WiX Toolset v3.14/bin/candle.exe' "../src/installer.wxs -o src/Release/quicreach.wixobj"
+        Execute 'C:/Program Files (x86)/WiX Toolset v3.14/bin/light.exe' "-b src/Release -o src/Release/quicreach.msi src/Release/quicreach.wixobj"
     }
 
     if ($Install) { Execute "cmake" "--install . --config Release" }
