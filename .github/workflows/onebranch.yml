@@ -25,9 +25,12 @@ jobs:
         submodules: 'recursive'
     - name: Pre-Build
       shell: pwsh
-      run: ./azure/pre-build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }}
+      run: ./.azure/pre-build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }}
     - name: Build
       run: msbuild ./build/ALL_BUILD.vcxproj /p:Configuration=Release /p:Platform=${{ matrix.platform }}
+    - name: Post-Build
+      shell: pwsh
+      run: ./.azure/post-build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }}
     - name: Upload
       uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
       with:

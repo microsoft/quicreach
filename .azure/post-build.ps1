@@ -1,3 +1,8 @@
+param (
+    [Parameter(Mandatory = $false)]
+    [ValidateSet("x86", "x64", "arm", "arm64", "arm64ec")]
+    [string]$Arch = "x64"
+)
 
 Set-StrictMode -Version 'Latest'
 $PSDefaultParameterValues['*:ErrorAction'] = 'Stop'
@@ -12,5 +17,8 @@ function Execute([String]$Name, [String]$Arguments) {
     }
 }
 
-Execute 'C:/Program Files (x86)/WiX Toolset v3.14/bin/candle.exe' "../src/installer.wxs -o src/Release/quicreach.wixobj"
-Execute 'C:/Program Files (x86)/WiX Toolset v3.14/bin/light.exe' "-b src/Release -o src/Release/quicreach.msi src/Release/quicreach.wixobj"
+$_Arch = $Arch
+if ($_Arch -eq "x86") { $_Arch = "Win32" }
+
+Execute 'C:/Program Files (x86)/WiX Toolset v3.14/bin/candle.exe' "../src/installer.wxs -o bin/$($_Arch)fre/quicreach.wixobj"
+Execute 'C:/Program Files (x86)/WiX Toolset v3.14/bin/light.exe' "-b bin/$($_Arch)fre/Release -o bin/$($_Arch)fre/quicreach.msi bin/$($_Arch)fre/quicreach.wixobj"

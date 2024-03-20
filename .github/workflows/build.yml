@@ -51,11 +51,11 @@ jobs:
       with:
         name: bin-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.tls }}-${{ matrix.link }}
         path: |
-          build/**/*.so
-          build/**/*.dll
-          build/**/quicreach
-          build/**/quicreach.exe
-          build/**/quicreach.msi
+          build/bin/**/*.so
+          build/bin/**/*.dll
+          build/bin/**/quicreach
+          build/bin/**/quicreach.exe
+          build/bin/**/quicreach.msi
     - name: Test (Linux)
       if: runner.os == 'Linux'
       run: /usr/local/lib/quicreach outlook-evergreen.office.com,www.cloudflare.com,www.google.com --req-all --stats
