@@ -16,6 +16,11 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 # outside the build tree to the install RPATH.
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+# Configure output paths.
+set(REACH_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${QUIC_BUILD_DIR}/obj/${CMAKE_LIBRARY_ARCHITECTURE}$<IF:$<CONFIG:Debug>,chk,fre>)
+set(REACH_OUTPUT_DIR ${REACH_BUILD_DIR}/bin/${CMAKE_LIBRARY_ARCHITECTURE}$<IF:$<CONFIG:Debug>,chk,fre> CACHE STRING "Output directory for build artifacts")
+
 if (WIN32)
     # Statically link the OS included part of the runtime.
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
