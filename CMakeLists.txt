@@ -36,10 +36,6 @@ if (WIN32)
     # Statically link the OS included part of the runtime.
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /NODEFAULTLIB:libucrt.lib /DEFAULTLIB:ucrt.lib")
-    if(REACH_ONEBRANCH)
-        message(STATUS "Configured for OneBranch builds")
-        set_target_properties(quicreach PROPERTIES VS_GLOBAL_UseInternalMSUniCrtPackage "true")
-    endif()
 endif()
 
 # Configure and build msquic dependency.
