@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-project(quicreach)
 cmake_minimum_required(VERSION 3.16) # 3.20 for non-shared libs
+project(quicreach)
 
 # Use, i.e. don't skip the full RPATH for the build tree.
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
@@ -18,8 +18,8 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Configure output paths.
 set(REACH_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${QUIC_BUILD_DIR}/obj/${CMAKE_LIBRARY_ARCHITECTURE}$<IF:$<CONFIG:Debug>,chk,fre>)
-set(REACH_OUTPUT_DIR ${REACH_BUILD_DIR}/bin/${CMAKE_LIBRARY_ARCHITECTURE}$<IF:$<CONFIG:Debug>,chk,fre> CACHE STRING "Output directory for build artifacts")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${QUIC_BUILD_DIR}/obj/${CMAKE_SYSTEM_PROCESSOR}$<IF:$<CONFIG:Debug>,chk,fre>)
+set(REACH_OUTPUT_DIR ${REACH_BUILD_DIR}/bin/${CMAKE_SYSTEM_PROCESSOR}$<IF:$<CONFIG:Debug>,chk,fre> CACHE STRING "Output directory for build artifacts")
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${REACH_OUTPUT_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${REACH_OUTPUT_DIR})
