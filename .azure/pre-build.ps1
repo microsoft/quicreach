@@ -4,6 +4,10 @@ param (
     [string]$Arch = "x64",
 
     [Parameter(Mandatory = $false)]
+    [ValidateSet("Debug", "Release")]
+    [string]$Config = "Release",
+
+    [Parameter(Mandatory = $false)]
     [ValidateSet("schannel", "openssl")]
     [string]$Tls = "schannel",
 
@@ -15,10 +19,6 @@ param (
 Set-StrictMode -Version 'Latest'
 $PSDefaultParameterValues['*:ErrorAction'] = 'Stop'
 
-if (!(Test-Path "./build")) {
-    New-Item -Path "./build" -ItemType Directory -Force | Out-Null
-}
-
 function Execute([String]$Name, [String]$Arguments) {
     Write-Debug "$Name $Arguments"
     $process = Start-Process $Name $Arguments -PassThru -NoNewWindow -WorkingDirectory "./build"
@@ -27,6 +27,17 @@ function Execute([String]$Name, [String]$Arguments) {
     if ($process.ExitCode -ne 0) {
         Write-Error "$Name exited with status code $($process.ExitCode)"
     }
+}
+
+if ($env:ONEBRANCH_ARCH) {
+    $Arch = $env:ONEBRANCH_ARCH
+}
+if ($env:ONEBRANCH_CONFIG) {
+    $Config = $env:ONEBRANCH_CONFIG
+}
+
+if (!(Test-Path "./build")) {
+    New-Item -Path "./build" -ItemType Directory -Force | Out-Null
 }
 
 $_Arch = $Arch
