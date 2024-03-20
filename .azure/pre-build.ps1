@@ -19,9 +19,17 @@ param (
 Set-StrictMode -Version 'Latest'
 $PSDefaultParameterValues['*:ErrorAction'] = 'Stop'
 
+# Root directory of the project.
+$RootDir = Split-Path $PSScriptRoot -Parent
+$BuildDir = Join-Path $RootDir "build"
+
+if (!(Test-Path $BuildDir)) {
+    New-Item -Path $BuildDir -ItemType Directory -Force | Out-Null
+}
+
 function Execute([String]$Name, [String]$Arguments) {
     Write-Debug "$Name $Arguments"
-    $process = Start-Process $Name $Arguments -PassThru -NoNewWindow -WorkingDirectory "./build"
+    $process = Start-Process $Name $Arguments -PassThru -NoNewWindow -WorkingDirectory $BuildDir
     $handle = $process.Handle # Magic work around. Don't remove this line.
     $process.WaitForExit();
     if ($process.ExitCode -ne 0) {
@@ -34,10 +42,6 @@ if ($env:ONEBRANCH_ARCH) {
 }
 if ($env:ONEBRANCH_CONFIG) {
     $Config = $env:ONEBRANCH_CONFIG
-}
-
-if (!(Test-Path "./build")) {
-    New-Item -Path "./build" -ItemType Directory -Force | Out-Null
 }
 
 $_Arch = $Arch
