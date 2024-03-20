@@ -53,12 +53,12 @@ if ($IsWindows) {
 
     $_Arch = $Arch
     if ($_Arch -eq "x86") { $_Arch = "Win32" }
-    Execute "cmake" "-G ""Visual Studio 17 2022"" -A $_Arch -DREACH_ARCH=$_Arch -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
+    Execute "cmake" "-G ""Visual Studio 17 2022"" -A $_Arch -DREACH_ARCH=$Arch -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
     Execute "cmake" "--build . --config $Config"
 
     if ($BuildInstaller) {
-        Execute 'C:/Program Files (x86)/WiX Toolset v3.14/bin/candle.exe' "../src/installer.wxs -o bin/$($_Arch)fre/quicreach.wixobj"
-        Execute 'C:/Program Files (x86)/WiX Toolset v3.14/bin/light.exe' "-b bin/$($_Arch)fre/Release -o bin/$($_Arch)fre/quicreach.msi bin/$($_Arch)fre/quicreach.wixobj"
+        Execute 'C:/Program Files (x86)/WiX Toolset v3.14/bin/candle.exe' "../src/installer.wxs -o bin/$($Arch)fre/quicreach.wixobj"
+        Execute 'C:/Program Files (x86)/WiX Toolset v3.14/bin/light.exe' "-b bin/$($Arch)fre/Release -o bin/$($Arch)fre/quicreach.msi bin/$($Arch)fre/quicreach.wixobj"
     }
 
     if ($Install) { Execute "cmake" "--install . --config Release" }
@@ -67,7 +67,7 @@ if ($IsWindows) {
 
     $BuildType = $Config
     if ($BuildType -eq "Release") { $BuildType = "RelWithDebInfo" }
-    Execute "cmake" "-G ""Unix Makefiles"" -DCMAKE_BUILD_TYPE=$BuildType -DREACH_ARCH=$_Arch -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
+    Execute "cmake" "-G ""Unix Makefiles"" -DCMAKE_BUILD_TYPE=$BuildType -DREACH_ARCH=$Arch -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
     Execute "cmake" "--build ."
 
     if ($Install) { Execute "sudo" "cmake --install . --config Release" }

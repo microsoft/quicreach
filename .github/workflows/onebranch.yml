@@ -14,8 +14,6 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, arm64]
-        tls: [schannel]
-        link: [static]
     name: Build
     runs-on: windows-latest
     steps:
@@ -23,18 +21,20 @@ jobs:
       uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
       with:
         submodules: 'recursive'
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce
     - name: Pre-Build
       shell: pwsh
-      run: ./.azure/pre-build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }}
+      run: ./.azure/pre-build.ps1 -Arch ${{ matrix.arch }}
     - name: Build
-      run: msbuild ./build/ALL_BUILD.vcxproj /p:Configuration=Release /p:Platform=${{ matrix.platform }}
+      run: msbuild ./build/ALL_BUILD.vcxproj /p:Configuration=Release /p:Platform=${{ matrix.arch }}
     - name: Post-Build
       shell: pwsh
-      run: ./.azure/post-build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }}
+      run: ./.azure/post-build.ps1 -Arch ${{ matrix.arch }}
     - name: Upload
       uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
       with:
-        name: bin-windows-${{ matrix.arch }}-${{ matrix.tls }}-${{ matrix.link }}
+        name: bin-windows-${{ matrix.arch }}
         path: |
           build/bin/**/*.so
           build/bin/**/*.dll
