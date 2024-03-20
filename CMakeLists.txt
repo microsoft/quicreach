@@ -30,10 +30,17 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${REACH_OUTPUT_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${REACH_OUTPUT_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${REACH_OUTPUT_DIR})
 
+option(REACH_ONEBRANCH "Builds for OneBranch" OFF)
+
 if (WIN32)
     # Statically link the OS included part of the runtime.
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /NODEFAULTLIB:libucrt.lib /DEFAULTLIB:ucrt.lib")
+    if(REACH_ONEBRANCH)
+        message(STATUS "Configured for OneBranch builds")
+        configure_file(.azure/onebranch.props ${CMAKE_CURRENT_BINARY_DIR}/custom_props.props COPYONLY)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /p:ForceImportBeforeCppTargets=${CMAKE_BINARY_DIR}/custom_props.props")
+    endif()
 endif()
 
 # Configure and build msquic dependency.
