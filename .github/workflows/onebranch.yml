@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+
+permissions: read-all
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+        tls: [schannel]
+        link: [static]
+    name: Build
+    runs-on: windows-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+      with:
+        submodules: 'recursive'
+    - name: Pre-Build
+      shell: pwsh
+      run: ./azure/pre-build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }}
+    - name: Build
+      run: msbuild ./build/ALL_BUILD.vcxproj /p:Configuration=Release /p:Platform=${{ matrix.platform }}
+    - name: Upload
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
+      with:
+        name: bin-windows-${{ matrix.arch }}-${{ matrix.tls }}-${{ matrix.link }}
+        path: |
+          build/bin/**/*.so
+          build/bin/**/*.dll
+          build/bin/**/quicreach
+          build/bin/**/quicreach.exe
+          build/bin/**/quicreach.msi

@@ -53,7 +53,7 @@ if ($IsWindows) {
 
     $_Arch = $Arch
     if ($_Arch -eq "x86") { $_Arch = "Win32" }
-    Execute "cmake" "-G ""Visual Studio 17 2022"" -A $_Arch -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
+    Execute "cmake" "-G ""Visual Studio 17 2022"" -A $_Arch -DREACH_ARCH=$_Arch -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
     Execute "cmake" "--build . --config $Config"
 
     if ($BuildInstaller) {
@@ -67,7 +67,7 @@ if ($IsWindows) {
 
     $BuildType = $Config
     if ($BuildType -eq "Release") { $BuildType = "RelWithDebInfo" }
-    Execute "cmake" "-G ""Unix Makefiles"" -DCMAKE_BUILD_TYPE=$BuildType -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
+    Execute "cmake" "-G ""Unix Makefiles"" -DCMAKE_BUILD_TYPE=$BuildType -DREACH_ARCH=$_Arch -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
     Execute "cmake" "--build ."
 
     if ($Install) { Execute "sudo" "cmake --install . --config Release" }
