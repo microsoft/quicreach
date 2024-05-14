@@ -103,14 +103,14 @@ void IncStat( _Inout_ _Interlocked_operand_ uint32_t volatile &Addend) {
 void AddHostName(const char* arg) {
     // Parse hostname(s), treating '*' as all top-level domains.
     if (!strcmp(arg, "*")) {
-        for (auto Domain : TopDomains) {
+        for (const auto& Domain : TopDomains) {
             Config.HostNames.push_back(Domain);
         }
     } else {
-        char* HostName = (char*)arg;
+        char* HostName = const_cast<char*>(arg);
         do {
             char* End = strchr(HostName, ',');
-            if (End) *End = 0;
+            if (End) *End = '\0';
             Config.HostNames.push_back(HostName);
             if (!End) break;
             HostName = End + 1;
