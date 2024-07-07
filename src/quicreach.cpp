@@ -14,6 +14,7 @@
 #include <vector>
 #include <mutex>
 #include <condition_variable>
+#include <quic_platform.h>
 #include <msquic.hpp>
 #include "quicreach.ver"
 #include "domains.hpp"
@@ -43,15 +44,16 @@ struct ReachConfig {
     QuicAddr SourceAddress;
     uint32_t Parallel {1};
     uint32_t Repeat {0};
-    uint32_t Timeout {0};
+    uint32_t Timeout {1000};
     uint16_t Port {443};
     MsQuicAlpn Alpn {"h3"};
     MsQuicSettings Settings;
     QUIC_CREDENTIAL_FLAGS CredFlags {QUIC_CREDENTIAL_FLAG_CLIENT};
     const char* OutCsvFile {nullptr};
-    ReachConfig() {
-        Settings.SetDisconnectTimeoutMs(1000);
-        Settings.SetHandshakeIdleTimeoutMs(1000);
+    ReachConfig() { }
+    void Set() {
+        Settings.SetDisconnectTimeoutMs(Timeout);
+        Settings.SetHandshakeIdleTimeoutMs(Timeout);
         Settings.SetPeerUnidiStreamCount(3);
         Settings.SetMinimumMtu(1288); /* We use a slightly larger than default MTU:
                                          1240 (QUIC) + 40 (IPv6) + 8 (UDP) */
@@ -204,6 +206,8 @@ bool ParseConfig(int argc, char **argv) {
         }
     }
 
+    Config.Set();
+
     return true;
 }
 
@@ -223,12 +227,6 @@ struct ReachConnection : public MsQuicConnection {
         }
         if (IsValid() && Config.SourceAddress.GetFamily() != QUIC_ADDRESS_FAMILY_UNSPEC) {
             InitStatus = SetLocalAddr(Config.SourceAddress);
-        }
-        if (IsValid() && Config.Timeout != 0) {
-            InitStatus = SetHandshakeIdleTimeoutMs(Config.Timeout);
-        }
-        if (IsValid() && Config.Timeout != 0) {
-            InitStatus = SetDisconnectTimeoutMs(Config.Timeout);
         }
         if (IsValid()) {
             InitStatus = Start(Configuration, HostName, Config.Port);
@@ -392,8 +390,9 @@ int QUIC_CALL main(int argc, char **argv) {
         return 1;
     }
 
+    bool Result = true;
     do {
-        bool Result = TestReachability();
+        Result &= TestReachability();
         if (!Config.PrintStatistics) {
             printf("%s\n", Result ? "Success" : "Failure");
         }
