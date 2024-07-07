@@ -350,12 +350,23 @@ bool TestReachability() {
     if (Config.PrintStatistics)
         printf("%30s          RTT       TIME_I       TIME_H              SEND:RECV    C1     S1    VER                     IP\n", "SERVER");
 
-    for (auto HostName : Config.HostNames) {
-        new ReachConnection(Registration, Configuration, HostName);
-        Results.WaitForActiveCount();
-    }
+    do {
+        for (auto HostName : Config.HostNames) {
+            new ReachConnection(Registration, Configuration, HostName);
+            Results.WaitForActiveCount();
+        }
 
-    Results.WaitForAll();
+        Results.WaitForAll();
+
+        if (Config.Repeat) {
+#ifdef _WIN32
+            Sleep(Config.Repeat);
+#else
+            usleep(Config.Repeat * 1000);
+#endif
+        }
+
+    } while (Config.Repeat);
 
     if (Config.PrintStatistics) {
         if (Results.ReachableCount > 1) {
@@ -390,19 +401,10 @@ int QUIC_CALL main(int argc, char **argv) {
         return 1;
     }
 
-    bool Result = true;
-    do {
-        Result &= TestReachability();
-        if (!Config.PrintStatistics) {
-            printf("%s\n", Result ? "Success" : "Failure");
-        }
-
-        if (Config.Repeat) {
-            CxPlatSleep(Config.Repeat);
-        }
-
-    } while (Config.Repeat);
-
+    bool Result = TestReachability();
+    if (!Config.PrintStatistics) {
+        printf("%s\n", Result ? "Success" : "Failure");
+    }
     delete MsQuic;
     return Result ? 0 : 1;
 }
