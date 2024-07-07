@@ -40,15 +40,19 @@ struct ReachConfig {
     bool RequireAll {false};
     std::vector<const char*> HostNames;
     QuicAddr Address;
+    QuicAddr SourceAddress;
     uint32_t Parallel {1};
+    uint32_t Repeat {0};
+    uint32_t Timeout {1000};
     uint16_t Port {443};
     MsQuicAlpn Alpn {"h3"};
     MsQuicSettings Settings;
     QUIC_CREDENTIAL_FLAGS CredFlags {QUIC_CREDENTIAL_FLAG_CLIENT};
     const char* OutCsvFile {nullptr};
-    ReachConfig() {
-        Settings.SetDisconnectTimeoutMs(1000);
-        Settings.SetHandshakeIdleTimeoutMs(1000);
+    ReachConfig() { }
+    void Set() {
+        Settings.SetDisconnectTimeoutMs(Timeout);
+        Settings.SetHandshakeIdleTimeoutMs(Timeout);
         Settings.SetPeerUnidiStreamCount(3);
         Settings.SetMinimumMtu(1288); /* We use a slightly larger than default MTU:
                                          1240 (QUIC) + 40 (IPv6) + 8 (UDP) */
@@ -130,7 +134,10 @@ bool ParseConfig(int argc, char **argv) {
                " -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)\n"
                " -p, --port <port>      The UDP port to use (def=443)\n"
                " -r, --req-all          Require all hostnames to succeed\n"
+               " -R, --repeat <time>    Repeat the requests event N milliseconds\n"
                " -s, --stats            Print connection statistics\n"
+               " -S, --source <address> Specify a source IP address\n"
+               " -t, --timeout <time>   Timeout in milliseconds to wait for each handshake\n"
                " -u, --unsecure         Allows unsecure connections\n"
                " -v, --version          Prints out the version\n"
               );
@@ -159,7 +166,7 @@ bool ParseConfig(int argc, char **argv) {
         } else if (!strcmp(argv[i], "--ip") || !strcmp(argv[i], "-i")) {
             if (++i >= argc) { printf("Missing IP address\n"); return false; }
             if (!QuicAddrFromString(argv[i], 0, &Config.Address.SockAddr)) {
-                printf("Invalid address arg passed in\n"); return false;
+                printf("Invalid address arg\n"); return false;
             }
 
         } else if (!strcmp(argv[i], "--parallel") || !strcmp(argv[i], "-l")) {
@@ -173,8 +180,22 @@ bool ParseConfig(int argc, char **argv) {
         } else if (!strcmp(argv[i], "--stats") || !strcmp(argv[i], "-s")) {
             Config.PrintStatistics = true;
 
+        } else if (!strcmp(argv[i], "--source") || !strcmp(argv[i], "-S")) {
+            if (++i >= argc) { printf("Missing source address\n"); return false; }
+            if (!QuicAddrFromString(argv[i], 0, &Config.SourceAddress.SockAddr)) {
+                printf("Invalid source address arg\n"); return false;
+            }
+
         } else if (!strcmp(argv[i], "--req-all") || !strcmp(argv[i], "-r")) {
             Config.RequireAll = true;
+
+        } else if (!strcmp(argv[i], "--repeat") || !strcmp(argv[i], "-R")) {
+            if (++i >= argc) { printf("Missing repeat arg\n"); return false; }
+            Config.Repeat = (uint32_t)atoi(argv[i]);
+
+        } else if (!strcmp(argv[i], "--timeout") || !strcmp(argv[i], "-t")) {
+            if (++i >= argc) { printf("Missing timeout arg\n"); return false; }
+            Config.Timeout = (uint32_t)atoi(argv[i]);
 
         } else if (!strcmp(argv[i], "--unsecure") || !strcmp(argv[i], "-u")) {
             Config.CredFlags |= QUIC_CREDENTIAL_FLAG_NO_CERTIFICATE_VALIDATION;
@@ -183,6 +204,8 @@ bool ParseConfig(int argc, char **argv) {
             printf("quicreach " QUICREACH_VERSION "\n");
         }
     }
+
+    Config.Set();
 
     return true;
 }
@@ -200,6 +223,9 @@ struct ReachConnection : public MsQuicConnection {
         Results.IncActive();
         if (IsValid() && Config.Address.GetFamily() != QUIC_ADDRESS_FAMILY_UNSPEC) {
             InitStatus = SetRemoteAddr(Config.Address);
+        }
+        if (IsValid() && Config.SourceAddress.GetFamily() != QUIC_ADDRESS_FAMILY_UNSPEC) {
+            InitStatus = SetLocalAddr(Config.SourceAddress);
         }
         if (IsValid()) {
             InitStatus = Start(Configuration, HostName, Config.Port);
@@ -323,12 +349,23 @@ bool TestReachability() {
     if (Config.PrintStatistics)
         printf("%30s          RTT       TIME_I       TIME_H              SEND:RECV    C1     S1    VER                     IP\n", "SERVER");
 
-    for (auto HostName : Config.HostNames) {
-        new ReachConnection(Registration, Configuration, HostName);
-        Results.WaitForActiveCount();
-    }
+    do {
+        for (auto HostName : Config.HostNames) {
+            new ReachConnection(Registration, Configuration, HostName);
+            Results.WaitForActiveCount();
+        }
 
-    Results.WaitForAll();
+        Results.WaitForAll();
+
+        if (Config.Repeat) {
+#ifdef _WIN32
+            Sleep(Config.Repeat);
+#else
+            usleep(Config.Repeat * 1000);
+#endif
+        }
+
+    } while (Config.Repeat);
 
     if (Config.PrintStatistics) {
         if (Results.ReachableCount > 1) {
