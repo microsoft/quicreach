@@ -14,7 +14,6 @@
 #include <vector>
 #include <mutex>
 #include <condition_variable>
-#include <quic_platform.h>
 #include <msquic.hpp>
 #include "quicreach.ver"
 #include "domains.hpp"
