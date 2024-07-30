@@ -30,11 +30,11 @@ cmake --build .
 
 # Usage
 
-```
+```Bash
 > quicreach google.com
 Success
 ```
-```
+```Bash
 > quicreach example.com
 Failure
 ```
@@ -51,7 +51,7 @@ Failure
 
 ### Full Help
 
-```
+```Bash
 > quicreach --help
 usage: quicreach <hostname(s)> [options...]
  -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)
