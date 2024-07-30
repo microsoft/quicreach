@@ -269,7 +269,7 @@ private:
             MultiRtt = true;
             IncStat(Results.MultiRttCount);
         } else {
-            TooMuch = Amplification > 4.0;
+            TooMuch = Amplification > 5.0;
             if (TooMuch) IncStat(Results.TooMuchCount);
         }
         if (Retry) {
