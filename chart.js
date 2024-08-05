@@ -49,14 +49,15 @@ function generateQuicV2Dataset() {
     return output
 }
 
-function createDataset(name, data) {
+function createDataset(name, data, fillColor) {
     return {
         type: "line",
         label: name,
         borderWidth: dataLineWidth,
         pointRadius: dataRawPointRadius,
         tension: 0,
-        data: data.slice(-dataMaxCount)
+        data: data.slice(-dataMaxCount),
+        backgroundColor: fillColor || "rgba(0, 0, 255, 0.5)",
     };
 }
 
@@ -122,9 +123,9 @@ function createChart() {
     createChartwithData("canvasReachable", reachable, false, false)
 
     var breakdown = []
-    breakdown.push(createDataset("Reachable", generateGoodReachableDataset()))
-    breakdown.push(createDataset("Reachable (Too Much)", generateTooMuchDataset()))
-    breakdown.push(createDataset("Reachable (Multi RTT)", generateMultiRttDataset()))
+    breakdown.push(createDataset("Reachable", generateGoodReachableDataset(), "rgba(0, 255, 0, 0.5)"))
+    breakdown.push(createDataset("Reachable (Too Much)", generateTooMuchDataset(), "rgba(255, 0, 0, 0.5)"))
+    breakdown.push(createDataset("Reachable (Multi RTT)", generateMultiRttDataset(), "rgba(0, 0, 255, 0.5)"))
     createChartwithData("canvasReachBreakdown", breakdown, true, true)
 
     var quicv2 = []
