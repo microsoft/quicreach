@@ -3,6 +3,8 @@ name: Reach
 on:
   push:
     branches: main
+  pull_request:
+    branches: main
   schedule:
     - cron: '0 */8 * * *' # every 8 hours
 
@@ -28,6 +30,7 @@ jobs:
     - name: quicreach *
       run: /usr/local/lib/quicreach '*' --parallel 8 --stats --csv build/data.csv
     - name: Save results
+      if: github.event_name != 'pull_request'
       run: |
         git checkout data
         git pull
