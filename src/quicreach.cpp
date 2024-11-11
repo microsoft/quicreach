@@ -332,8 +332,8 @@ void DumpResultsToFile() {
     struct tm* Tm = gmtime(&Time);
     strftime(UtcDateTime, sizeof(UtcDateTime), "%Y.%m.%d-%H:%M:%S", Tm);
     fprintf(File, "%s,%u,%u,%u,%u,%u,%u,%u,%u\n", UtcDateTime,
-        Results.TotalCount, Results.ReachableCount, Results.TooMuchCount, Results.MultiRttCount, Results.RetryCount,
-        Results.IPv6Count, Results.Quicv2Count, Results.WayTooMuchCount);
+        Results.TotalCount.load(), Results.ReachableCount.load(), Results.TooMuchCount.load(), Results.MultiRttCount.load(),
+        Results.RetryCount.load(), Results.IPv6Count.load(), Results.Quicv2Count.load(), Results.WayTooMuchCount.load());
     fclose(File);
     printf("\nOutput written to %s\n", Config.OutCsvFile);
 }
@@ -374,19 +374,19 @@ bool TestReachability() {
         if (Results.ReachableCount > 1) {
             printf("\n");
             printf("%4u domain(s) attempted\n", (uint32_t)Config.HostNames.size());
-            printf("%4u domain(s) reachable\n", Results.ReachableCount);
+            printf("%4u domain(s) reachable\n", Results.ReachableCount.load());
             if (Results.MultiRttCount)
-                printf("%4u domain(s) required multiple round trips (*)\n", Results.MultiRttCount);
+                printf("%4u domain(s) required multiple round trips (*)\n", Results.MultiRttCount.load());
             if (Results.TooMuchCount)
-                printf("%4u domain(s) exceeded amplification limits (!)\n", Results.TooMuchCount);
+                printf("%4u domain(s) exceeded amplification limits (!)\n", Results.TooMuchCount.load());
             if (Results.WayTooMuchCount)
-                printf("%4u domain(s) well exceeded amplification limits (5x)\n", Results.WayTooMuchCount);
+                printf("%4u domain(s) well exceeded amplification limits (5x)\n", Results.WayTooMuchCount.load());
             if (Results.RetryCount)
-                printf("%4u domain(s) sent RETRY packets (R)\n", Results.RetryCount);
+                printf("%4u domain(s) sent RETRY packets (R)\n", Results.RetryCount.load());
             if (Results.IPv6Count)
-                printf("%4u domain(s) used IPv6\n", Results.IPv6Count);
+                printf("%4u domain(s) used IPv6\n", Results.IPv6Count.load());
             if (Results.Quicv2Count)
-                printf("%4u domain(s) used QUIC v2\n", Results.Quicv2Count);
+                printf("%4u domain(s) used QUIC v2\n", Results.Quicv2Count.load());
         }
     }
 
