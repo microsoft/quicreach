@@ -13,6 +13,7 @@
 #include <thread>
 #include <vector>
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 #include <msquic.hpp>
 #include "quicreach.ver"
@@ -64,14 +65,14 @@ struct ReachConfig {
 } Config;
 
 struct ReachResults {
-    uint32_t TotalCount {0};
-    uint32_t ReachableCount {0};
-    uint32_t TooMuchCount {0};
-    uint32_t WayTooMuchCount {0};
-    uint32_t MultiRttCount {0};
-    uint32_t RetryCount {0};
-    uint32_t IPv6Count {0};
-    uint32_t Quicv2Count {0};
+    atomic<uint32_t> TotalCount {0};
+    atomic<uint32_t> ReachableCount {0};
+    atomic<uint32_t> TooMuchCount {0};
+    atomic<uint32_t> WayTooMuchCount {0};
+    atomic<uint32_t> MultiRttCount {0};
+    atomic<uint32_t> RetryCount {0};
+    atomic<uint32_t> IPv6Count {0};
+    atomic<uint32_t> Quicv2Count {0};
     // Number of currently active connections.
     uint32_t ActiveCount {0};
     // Synchronization for active count.
@@ -99,14 +100,6 @@ struct ReachResults {
         NotifyEvent.notify_all();
     }
 } Results;
-
-void IncStat( _Inout_ _Interlocked_operand_ uint32_t volatile &Addend) {
-#if _WIN32
-    InterlockedIncrement((volatile long*)&Addend);
-#else
-    __sync_add_and_fetch((long*)&Addend, (long)1);
-#endif
-}
 
 void AddHostName(const char* arg) {
     // Parse hostname(s), treating '*' as all top-level domains.
@@ -223,7 +216,7 @@ struct ReachConnection : public MsQuicConnection {
         _In_ const MsQuicConfiguration& Configuration,
         _In_ const char* HostName
     ) : MsQuicConnection(Registration, CleanUpAutoDelete, Callback), HostName(HostName) {
-        IncStat(Results.TotalCount);
+        Results.TotalCount++;
         Results.IncActive();
         if (IsValid() && Config.Address.GetFamily() != QUIC_ADDRESS_FAMILY_UNSPEC) {
             InitStatus = SetRemoteAddr(Config.Address);
@@ -258,7 +251,7 @@ struct ReachConnection : public MsQuicConnection {
 private:
     void OnReachable() {
         HandshakeComplete = true;
-        IncStat(Results.ReachableCount);
+        Results.ReachableCount++;
         GetStatistics(&Stats);
         QuicAddr RemoteAddr;
         GetRemoteAddr(RemoteAddr);
@@ -271,24 +264,24 @@ private:
         auto Retry = (bool)(Stats.StatelessRetry);
         if (Stats.SendTotalPackets != 1) {
             MultiRtt = true;
-            IncStat(Results.MultiRttCount);
+            Results.MultiRttCount++;
         } else {
             TooMuch = Amplification > LOW_AMPLIFICATION_LIMIT;
             if (TooMuch) {
-                IncStat(Results.TooMuchCount);
+                Results.TooMuchCount++;
                 if (Amplification > HIGH_AMPLIFICATION_LIMIT) {
-                    IncStat(Results.WayTooMuchCount);
+                    Results.WayTooMuchCount++;
                 }
             }
         }
         if (Retry) {
-            IncStat(Results.RetryCount);
+            Results.RetryCount++;
         }
         if (RemoteAddr.GetFamily() == QUIC_ADDRESS_FAMILY_INET6) {
-            IncStat(Results.IPv6Count);
+            Results.IPv6Count++;
         }
         if (Version == QUIC_VERSION_2) {
-            IncStat(Results.Quicv2Count);
+            Results.Quicv2Count++;
         }
         if (Config.PrintStatistics){
             const char HandshakeTags[3] = {
@@ -339,8 +332,8 @@ void DumpResultsToFile() {
     struct tm* Tm = gmtime(&Time);
     strftime(UtcDateTime, sizeof(UtcDateTime), "%Y.%m.%d-%H:%M:%S", Tm);
     fprintf(File, "%s,%u,%u,%u,%u,%u,%u,%u,%u\n", UtcDateTime,
-        Results.TotalCount, Results.ReachableCount, Results.TooMuchCount, Results.MultiRttCount, Results.RetryCount,
-        Results.IPv6Count, Results.Quicv2Count, Results.WayTooMuchCount);
+        Results.TotalCount.load(), Results.ReachableCount.load(), Results.TooMuchCount.load(), Results.MultiRttCount.load(),
+        Results.RetryCount.load(), Results.IPv6Count.load(), Results.Quicv2Count.load(), Results.WayTooMuchCount.load());
     fclose(File);
     printf("\nOutput written to %s\n", Config.OutCsvFile);
 }
@@ -381,19 +374,19 @@ bool TestReachability() {
         if (Results.ReachableCount > 1) {
             printf("\n");
             printf("%4u domain(s) attempted\n", (uint32_t)Config.HostNames.size());
-            printf("%4u domain(s) reachable\n", Results.ReachableCount);
+            printf("%4u domain(s) reachable\n", Results.ReachableCount.load());
             if (Results.MultiRttCount)
-                printf("%4u domain(s) required multiple round trips (*)\n", Results.MultiRttCount);
+                printf("%4u domain(s) required multiple round trips (*)\n", Results.MultiRttCount.load());
             if (Results.TooMuchCount)
-                printf("%4u domain(s) exceeded amplification limits (!)\n", Results.TooMuchCount);
+                printf("%4u domain(s) exceeded amplification limits (!)\n", Results.TooMuchCount.load());
             if (Results.WayTooMuchCount)
-                printf("%4u domain(s) well exceeded amplification limits (5x)\n", Results.WayTooMuchCount);
+                printf("%4u domain(s) well exceeded amplification limits (5x)\n", Results.WayTooMuchCount.load());
             if (Results.RetryCount)
-                printf("%4u domain(s) sent RETRY packets (R)\n", Results.RetryCount);
+                printf("%4u domain(s) sent RETRY packets (R)\n", Results.RetryCount.load());
             if (Results.IPv6Count)
-                printf("%4u domain(s) used IPv6\n", Results.IPv6Count);
+                printf("%4u domain(s) used IPv6\n", Results.IPv6Count.load());
             if (Results.Quicv2Count)
-                printf("%4u domain(s) used QUIC v2\n", Results.Quicv2Count);
+                printf("%4u domain(s) used QUIC v2\n", Results.Quicv2Count.load());
         }
     }
 
