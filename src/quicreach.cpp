@@ -13,6 +13,7 @@
 #include <thread>
 #include <vector>
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 #include <msquic.hpp>
 #include "quicreach.ver"
@@ -64,14 +65,14 @@ struct ReachConfig {
 } Config;
 
 struct ReachResults {
-    uint32_t TotalCount {0};
-    uint32_t ReachableCount {0};
-    uint32_t TooMuchCount {0};
-    uint32_t WayTooMuchCount {0};
-    uint32_t MultiRttCount {0};
-    uint32_t RetryCount {0};
-    uint32_t IPv6Count {0};
-    uint32_t Quicv2Count {0};
+    atomic<uint32_t> TotalCount {0};
+    atomic<uint32_t> ReachableCount {0};
+    atomic<uint32_t> TooMuchCount {0};
+    atomic<uint32_t> WayTooMuchCount {0};
+    atomic<uint32_t> MultiRttCount {0};
+    atomic<uint32_t> RetryCount {0};
+    atomic<uint32_t> IPv6Count {0};
+    atomic<uint32_t> Quicv2Count {0};
     // Number of currently active connections.
     uint32_t ActiveCount {0};
     // Synchronization for active count.
@@ -99,14 +100,6 @@ struct ReachResults {
         NotifyEvent.notify_all();
     }
 } Results;
-
-void IncStat( _Inout_ _Interlocked_operand_ uint32_t volatile &Addend) {
-#if _WIN32
-    InterlockedIncrement((volatile long*)&Addend);
-#else
-    __sync_add_and_fetch((long*)&Addend, (long)1);
-#endif
-}
 
 void AddHostName(const char* arg) {
     // Parse hostname(s), treating '*' as all top-level domains.
@@ -223,7 +216,7 @@ struct ReachConnection : public MsQuicConnection {
         _In_ const MsQuicConfiguration& Configuration,
         _In_ const char* HostName
     ) : MsQuicConnection(Registration, CleanUpAutoDelete, Callback), HostName(HostName) {
-        IncStat(Results.TotalCount);
+        Results.TotalCount++;
         Results.IncActive();
         if (IsValid() && Config.Address.GetFamily() != QUIC_ADDRESS_FAMILY_UNSPEC) {
             InitStatus = SetRemoteAddr(Config.Address);
@@ -258,7 +251,7 @@ struct ReachConnection : public MsQuicConnection {
 private:
     void OnReachable() {
         HandshakeComplete = true;
-        IncStat(Results.ReachableCount);
+        Results.ReachableCount++;
         GetStatistics(&Stats);
         QuicAddr RemoteAddr;
         GetRemoteAddr(RemoteAddr);
@@ -271,24 +264,24 @@ private:
         auto Retry = (bool)(Stats.StatelessRetry);
         if (Stats.SendTotalPackets != 1) {
             MultiRtt = true;
-            IncStat(Results.MultiRttCount);
+            Results.MultiRttCount++;
         } else {
             TooMuch = Amplification > LOW_AMPLIFICATION_LIMIT;
             if (TooMuch) {
-                IncStat(Results.TooMuchCount);
+                Results.TooMuchCount++;
                 if (Amplification > HIGH_AMPLIFICATION_LIMIT) {
-                    IncStat(Results.WayTooMuchCount);
+                    Results.WayTooMuchCount++;
                 }
             }
         }
         if (Retry) {
-            IncStat(Results.RetryCount);
+            Results.RetryCount++;
         }
         if (RemoteAddr.GetFamily() == QUIC_ADDRESS_FAMILY_INET6) {
-            IncStat(Results.IPv6Count);
+            Results.IPv6Count++;
         }
         if (Version == QUIC_VERSION_2) {
-            IncStat(Results.Quicv2Count);
+            Results.Quicv2Count++;
         }
         if (Config.PrintStatistics){
             const char HandshakeTags[3] = {
