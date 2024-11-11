@@ -13,7 +13,7 @@ permissions: read-all
 jobs:
   reach-linux-openssl:
     permissions: write-all
-    name: Top 1000 Reachability Test (Linux-OpenSSL)
+    name: Top 5000 Reachability Test (Linux-OpenSSL)
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
@@ -44,7 +44,7 @@ jobs:
         git checkout main
   reach-windows-schannel:
     permissions: write-all
-    name: Top 1000 Reachability Test (Windows-Schannel)
+    name: Top 5000 Reachability Test (Windows-Schannel)
     needs: []
     runs-on: windows-latest
     steps:
