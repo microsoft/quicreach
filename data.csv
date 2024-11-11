@@ -1,4 +1,4 @@
-UtcDateTime,Total,Reachable,TooMuch,MultiRtt,Retry,IPv6,QuicV2
+UtcDateTime,Total,Reachable,TooMuch,MultiRtt,Retry,IPv6,QuicV2,WayTooMuch
 2022.06.17-12:51:37,5021,622,429,178,2,0,0
 2022.06.18-01:03:36,5021,620,427,179,2,0,0
 2022.06.19-01:04:36,5021,620,428,178,1,0,0
