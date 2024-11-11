@@ -32,6 +32,9 @@ const MsQuicApi* MsQuic;
 #define QUIC_VERSION_2          0x6b3343cfU     // Second official version (host byte order)
 #define QUIC_VERSION_1          0x00000001U     // First official version (host byte order)
 
+#define LOW_AMPLIFICATION_LIMIT     3.0         // Limit as specified by the QUIC spec
+#define HIGH_AMPLIFICATION_LIMIT    5.0         // Higher limit that seems to be practically used
+
 const uint32_t SupportedVersions[] = {QUIC_VERSION_1, QUIC_VERSION_2};
 const MsQuicVersionSettings VersionSettings(SupportedVersions, 2);
 
@@ -64,6 +67,7 @@ struct ReachResults {
     uint32_t TotalCount {0};
     uint32_t ReachableCount {0};
     uint32_t TooMuchCount {0};
+    uint32_t WayTooMuchCount {0};
     uint32_t MultiRttCount {0};
     uint32_t RetryCount {0};
     uint32_t IPv6Count {0};
@@ -269,8 +273,13 @@ private:
             MultiRtt = true;
             IncStat(Results.MultiRttCount);
         } else {
-            TooMuch = Amplification > 3.0;
-            if (TooMuch) IncStat(Results.TooMuchCount);
+            TooMuch = Amplification > LOW_AMPLIFICATION_LIMIT;
+            if (TooMuch) {
+                IncStat(Results.TooMuchCount);
+                if (Amplification > HIGH_AMPLIFICATION_LIMIT) {
+                    IncStat(Results.WayTooMuchCount);
+                }
+            }
         }
         if (Retry) {
             IncStat(Results.RetryCount);
@@ -323,14 +332,15 @@ void DumpResultsToFile() {
             return;
         }
     } else {
-        fprintf(File, "UtcDateTime,Total,Reachable,TooMuch,MultiRtt,Retry,IPv6,QuicV2\n");
+        fprintf(File, "UtcDateTime,Total,Reachable,TooMuch,MultiRtt,Retry,IPv6,QuicV2,WayTooMuch\n");
     }
     char UtcDateTime[256];
     time_t Time = time(nullptr);
     struct tm* Tm = gmtime(&Time);
     strftime(UtcDateTime, sizeof(UtcDateTime), "%Y.%m.%d-%H:%M:%S", Tm);
-    fprintf(File, "%s,%u,%u,%u,%u,%u,%u,%u\n", UtcDateTime,
-        Results.TotalCount, Results.ReachableCount, Results.TooMuchCount, Results.MultiRttCount, Results.RetryCount, Results.IPv6Count, Results.Quicv2Count);
+    fprintf(File, "%s,%u,%u,%u,%u,%u,%u,%u,%u\n", UtcDateTime,
+        Results.TotalCount, Results.ReachableCount, Results.TooMuchCount, Results.MultiRttCount, Results.RetryCount,
+        Results.IPv6Count, Results.Quicv2Count, Results.WayTooMuchCount);
     fclose(File);
     printf("\nOutput written to %s\n", Config.OutCsvFile);
 }
@@ -376,6 +386,8 @@ bool TestReachability() {
                 printf("%4u domain(s) required multiple round trips (*)\n", Results.MultiRttCount);
             if (Results.TooMuchCount)
                 printf("%4u domain(s) exceeded amplification limits (!)\n", Results.TooMuchCount);
+            if (Results.WayTooMuchCount)
+                printf("%4u domain(s) well exceeded amplification limits (5x)\n", Results.WayTooMuchCount);
             if (Results.RetryCount)
                 printf("%4u domain(s) sent RETRY packets (R)\n", Results.RetryCount);
             if (Results.IPv6Count)
