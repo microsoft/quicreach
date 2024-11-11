@@ -31,7 +31,14 @@ function generateGoodReachableDataset() {
 function generateTooMuchDataset() {
     var output = []
     reachData.forEach(
-        p => output.push({x:new Date(p.UtcDateTime), y:p.TooMuch}))
+        p => output.push({x:new Date(p.UtcDateTime), y:p.TooMuch - p.WayTooMuch}))
+    return output
+}
+
+function generateWayTooMuchDataset() {
+    var output = []
+    reachData.forEach(
+        p => output.push({x:new Date(p.UtcDateTime), y:p.WayTooMuch}))
     return output
 }
 
@@ -125,7 +132,8 @@ function createChart() {
     var breakdown = []
     breakdown.push(createDataset("Reachable", generateGoodReachableDataset(), "rgba(0, 255, 0, 0.5)"))
     breakdown.push(createDataset("Reachable (Too Much)", generateTooMuchDataset(), "rgba(255, 0, 0, 0.5)"))
-    breakdown.push(createDataset("Reachable (Multi RTT)", generateMultiRttDataset(), "rgba(0, 0, 255, 0.5)"))
+    breakdown.push(createDataset("Reachable (Way Too Much)", generateWayTooMuchDataset(), "rgba(255, 128, 0, 0.5)"))
+    breakdown.push(createDataset("Reachable (Multi RTT)", generateMultiRttDataset(), "rgba(255, 255, 0, 0.5)"))
     createChartwithData("canvasReachBreakdown", breakdown, true, true)
 
     var quicv2 = []
