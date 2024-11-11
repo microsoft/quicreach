@@ -130,10 +130,10 @@ function createChart() {
     createChartwithData("canvasReachable", reachable, false, false)
 
     var breakdown = []
-    breakdown.push(createDataset("Reachable", generateGoodReachableDataset(), "rgba(0, 255, 0, 0.5)"))
-    breakdown.push(createDataset("Reachable (Multi RTT)", generateMultiRttDataset(), "rgba(255, 255, 0, 0.5)"))
-    breakdown.push(createDataset("Reachable (Too Much)", generateTooMuchDataset(), "rgba(255, 128, 0, 0.5)"))
-    breakdown.push(createDataset("Reachable (Way Too Much)", generateWayTooMuchDataset(), "rgba(255, 0, 0, 0.5)"))
+    breakdown.push(createDataset("Ideal", generateGoodReachableDataset(), "rgba(0, 255, 0, 0.5)"))
+    breakdown.push(createDataset("Multi-RTT Handshake", generateMultiRttDataset(), "rgba(255, 255, 0, 0.5)"))
+    breakdown.push(createDataset("Too Much Amplification", generateTooMuchDataset(), "rgba(255, 128, 0, 0.5)"))
+    breakdown.push(createDataset("Way Too Much Amplification", generateWayTooMuchDataset(), "rgba(255, 0, 0, 0.5)"))
     createChartwithData("canvasReachBreakdown", breakdown, true, true)
 
     var quicv2 = []
