@@ -54,7 +54,7 @@ jobs:
       if: runner.os == 'Windows'
       uses: ilammy/setup-nasm@13cbeb366c45c4379d3478cdcbadd8295feb5028
     - name: Initialize CodeQL
-      if: ${{ matrix.os }} == 'ubuntu' && ${{ matrix.arch }} == 'x64' && ${{ matrix.link }} == 'shared'
+      if: ${{ matrix.os == 'ubuntu' && matrix.arch == 'x64' && matrix.link == 'shared' }}
       uses: github/codeql-action/init@v3
       with:
         languages: c-cpp
@@ -63,7 +63,7 @@ jobs:
       shell: pwsh
       run: ./build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }} -Install -BuildInstaller -Debug
     - name: Perform CodeQL Analysis
-      if: ${{ matrix.os }} == 'ubuntu' && ${{ matrix.arch }} == 'x64' && ${{ matrix.link }} == 'shared'
+      if: ${{ matrix.os == 'ubuntu' && matrix.arch == 'x64' && matrix.link == 'shared' }}
       uses: github/codeql-action/analyze@v3
       with:
         category: "/language:c-cpp"
