@@ -11,7 +11,7 @@ on:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    runs-on: 'ubuntu-latest'
     permissions:
       # required for all workflows
       security-events: write
@@ -25,16 +25,18 @@ jobs:
       matrix:
         include:
         - language: c-cpp
-          build-mode: autobuild
+          build-mode: mamual
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-    # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
+    - name: Build
+      shell: pwsh
+      run: ./build.ps1 -Link shared
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:
