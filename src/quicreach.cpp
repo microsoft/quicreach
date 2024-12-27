@@ -329,8 +329,9 @@ void DumpResultsToFile() {
     }
     char UtcDateTime[256];
     time_t Time = time(nullptr);
-    struct tm* Tm = gmtime(&Time);
-    strftime(UtcDateTime, sizeof(UtcDateTime), "%Y.%m.%d-%H:%M:%S", Tm);
+    struct tm Tm;
+    gmtime_r(&Time, &Tm);
+    strftime(UtcDateTime, sizeof(UtcDateTime), "%Y.%m.%d-%H:%M:%S", &Tm);
     fprintf(File, "%s,%u,%u,%u,%u,%u,%u,%u,%u\n", UtcDateTime,
         Results.TotalCount.load(), Results.ReachableCount.load(), Results.TooMuchCount.load(), Results.MultiRttCount.load(),
         Results.RetryCount.load(), Results.IPv6Count.load(), Results.Quicv2Count.load(), Results.WayTooMuchCount.load());
