@@ -53,9 +53,23 @@ jobs:
     - name: Install NASM
       if: runner.os == 'Windows'
       uses: ilammy/setup-nasm@13cbeb366c45c4379d3478cdcbadd8295feb5028
+    - name: Initialize CodeQL
+      if: ${{ (matrix.os == 'ubuntu') && (matrix.arch == 'x64') && (matrix.link == 'shared') }}
+      uses: github/codeql-action/init@48ab28a6f5dbc2a99bf1e0131198dd8f1df78169
+      with:
+        languages: c-cpp
+        build-mode: manual
+        config: |
+          paths-ignore:
+            - msquic
     - name: Build
       shell: pwsh
       run: ./build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }} -Install -BuildInstaller -Debug
+    - name: Perform CodeQL Analysis
+      if: ${{ (matrix.os == 'ubuntu') && (matrix.arch == 'x64') && (matrix.link == 'shared') }}
+      uses: github/codeql-action/analyze@48ab28a6f5dbc2a99bf1e0131198dd8f1df78169
+      with:
+        category: "/language:c-cpp"
     - name: Upload
       uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b
       with:
