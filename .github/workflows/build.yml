@@ -68,6 +68,9 @@ jobs:
       with:
         languages: c-cpp
         build-mode: manual
+        config: |
+          queries:
+           - uses: security-and-quality # (very verbose)
     - name: Build
       shell: pwsh
       run: ./build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }} -Install -BuildInstaller -Debug
