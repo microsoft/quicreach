@@ -82,7 +82,7 @@ jobs:
       if: ${{ (matrix.os == 'ubuntu') && (matrix.arch == 'x64') && (matrix.link == 'shared') }}
       uses: advanced-security/filter-sarif@f3b8118a9349d88f7b1c0c488476411145b6270d
       with:
-        patterns: -**/msquic/**
+        patterns: -msquic/**/*
         input: sarif-results/cpp.sarif
         output: sarif-results/cpp.sarif
     - name: Upload SARIF
