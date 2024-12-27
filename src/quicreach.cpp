@@ -101,14 +101,14 @@ struct ReachResults {
     }
 } Results;
 
-void AddHostName(const char* arg) {
+void AddHostName(char* arg) {
     // Parse hostname(s), treating '*' as all top-level domains.
     if (!strcmp(arg, "*")) {
         for (const auto& Domain : TopDomains) {
             Config.HostNames.push_back(Domain);
         }
     } else {
-        char* HostName = const_cast<char*>(arg);
+        char* HostName = arg;
         do {
             char* End = strchr(HostName, ',');
             if (End) *End = '\0';
