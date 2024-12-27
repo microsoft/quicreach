@@ -78,11 +78,11 @@ jobs:
         category: "/language:c-cpp"
         output: sarif-results
         upload: failure-only
-    - name: filter-sarif
+    - name: Filter SARIF
       if: ${{ (matrix.os == 'ubuntu') && (matrix.arch == 'x64') && (matrix.link == 'shared') }}
       uses: advanced-security/filter-sarif@v1
       with:
-        patterns: -msquic/**
+        patterns: -**/msquic/**
         input: sarif-results/cpp.sarif
         output: sarif-results/cpp.sarif
     - name: Upload SARIF
