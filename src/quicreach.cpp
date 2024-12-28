@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <iomanip> /* This Header is Included for Formating Output */
 #include <thread>
 #include <vector>
 #include <mutex>
@@ -291,27 +292,24 @@ private:
             QUIC_ADDR_STR AddrStr;
             QuicAddrToString(&RemoteAddr.SockAddr, &AddrStr);
             unique_lock<mutex> lock(Results.Mutex);
-            printf("%30s   %3u.%03u ms   %3u.%03u ms   %3u.%03u ms   %u:%u %u:%u (%2.1fx)  %4u   %4u     %s   %20s   %s\n",
-                HostName,
-                Stats.Rtt / 1000, Stats.Rtt % 1000,
-                InitialTime / 1000, InitialTime % 1000,
-                HandshakeTime / 1000, HandshakeTime % 1000,
-                (uint32_t)Stats.SendTotalPackets,
-                (uint32_t)Stats.RecvTotalPackets,
-                (uint32_t)Stats.SendTotalBytes,
-                (uint32_t)Stats.RecvTotalBytes,
-                Amplification,
-                Stats.HandshakeClientFlight1Bytes,
-                Stats.HandshakeServerFlight1Bytes,
-                Version == QUIC_VERSION_1 ? "v1" : "v2",
-                AddrStr.Address,
-                HandshakeTags);
+            std::cout << std::setw(30) << HostName << "   "
+                      << std::setw(3) << Stats.Rtt / 1000 << "." << std::setfill('0') << std::setw(3) << Stats.Rtt % 1000 << std::setfill(' ') << " ms" << "   "
+                      << std::setw(3) << InitialTime / 1000 << "." << std::setfill('0') << std::setw(3) << InitialTime % 1000 << std::setfill(' ') << " ms" << "   "
+                      << std::setw(3) << HandshakeTime / 1000 << "." << std::setfill('0') << std::setw(3) << HandshakeTime % 1000 << std::setfill(' ') << " ms" << "   "
+                      << (uint32_t)Stats.SendTotalPackets << ":" << (uint32_t)Stats.RecvTotalPackets << " "
+                      << (uint32_t)Stats.SendTotalBytes << ":" << (uint32_t)Stats.RecvTotalBytes << " "
+                      << "(" << std::fixed << std::setprecision(1) << Amplification << "x)" << "  "
+                      << std::setw(4) << Stats.HandshakeClientFlight1Bytes << "   "
+                      << std::setw(4) << Stats.HandshakeServerFlight1Bytes << "     "
+                      << (Version == QUIC_VERSION_1 ? "v1" : "v2") << "   "
+                      << std::setw(20) << AddrStr.Address << "   "
+                      << HandshakeTags << std::endl;
         }
     }
     void OnUnreachable() {
         if (Config.PrintStatistics) {
             unique_lock<mutex> lock(Results.Mutex);
-            printf("%30s\n", HostName);
+            std::cout << std::setw(30) << HostName << std::endl;
         }
     }
 };
@@ -350,7 +348,7 @@ bool TestReachability() {
     Configuration.SetVersionNegotiationExtEnabled();
 
     if (Config.PrintStatistics)
-        printf("%30s          RTT       TIME_I       TIME_H              SEND:RECV    C1     S1    VER                     IP\n", "SERVER");
+        std::cout << setw(30) << "SERVER" << "          RTT       TIME_I       TIME_H              SEND:RECV    C1     S1    VER                     IP\n";
 
     do {
         for (auto HostName : Config.HostNames) {
@@ -373,20 +371,20 @@ bool TestReachability() {
     if (Config.PrintStatistics) {
         if (Results.ReachableCount > 1) {
             std::cout << std::endl;
-            printf("%4u domain(s) attempted\n", (uint32_t)Config.HostNames.size());
-            printf("%4u domain(s) reachable\n", Results.ReachableCount.load());
+            std::cout << std::setw(4) << (uint32_t)Config.HostNames.size() << " domain(s) attempted\n";
+            std::cout << std::setw(4) << Results.ReachableCount.load() << " domain(s) reachable\n";
             if (Results.MultiRttCount)
-                printf("%4u domain(s) required multiple round trips (*)\n", Results.MultiRttCount.load());
+                std::cout << std::setw(4) << Results.MultiRttCount.load() << " domain(s) required multiple round trips (*)\n";
             if (Results.TooMuchCount)
-                printf("%4u domain(s) exceeded amplification limits (!)\n", Results.TooMuchCount.load());
+                std::cout << std::setw(4) << Results.TooMuchCount.load() << " domain(s) exceeded amplification limits (!)\n";
             if (Results.WayTooMuchCount)
-                printf("%4u domain(s) well exceeded amplification limits (5x)\n", Results.WayTooMuchCount.load());
+                std::cout << std::setw(4) << Results.WayTooMuchCount.load() << " domain(s) well exceeded amplification limits (5x)\n";
             if (Results.RetryCount)
-                printf("%4u domain(s) sent RETRY packets (R)\n", Results.RetryCount.load());
+                std::cout << std::setw(4) << Results.RetryCount.load() << " domain(s) sent RETRY packets (R)\n";
             if (Results.IPv6Count)
-                printf("%4u domain(s) used IPv6\n", Results.IPv6Count.load());
+                std::cout << std::setw(4) << Results.IPv6Count.load() << " domain(s) used IPv6\n";
             if (Results.Quicv2Count)
-                printf("%4u domain(s) used QUIC v2\n", Results.Quicv2Count.load());
+                std::cout << std::setw(4) << Results.Quicv2Count.load() << " domain(s) used QUIC v2\n";
         }
     }
 
