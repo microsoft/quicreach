@@ -330,7 +330,11 @@ void DumpResultsToFile() {
     char UtcDateTime[256];
     time_t Time = time(nullptr);
     struct tm Tm;
+#ifdef _WIN32
+    gmtime_s(&Tm, &Time);
+#else
     gmtime_r(&Time, &Tm);
+#endif
     strftime(UtcDateTime, sizeof(UtcDateTime), "%Y.%m.%d-%H:%M:%S", &Tm);
     fprintf(File, "%s,%u,%u,%u,%u,%u,%u,%u,%u\n", UtcDateTime,
         Results.TotalCount.load(), Results.ReachableCount.load(), Results.TooMuchCount.load(), Results.MultiRttCount.load(),
