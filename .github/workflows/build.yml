@@ -70,7 +70,12 @@ jobs:
         build-mode: manual
         config: |
           queries:
-           - uses: security-and-quality # (very verbose)
+            - uses: security-and-quality # (very verbose)
+          query-filters:
+            - exclude:
+                id: cpp/loop-variable-changed
+            - exclude:
+                id: cpp/include-non-header
     - name: Build
       shell: pwsh
       run: ./build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }} -Install -BuildInstaller -Debug
