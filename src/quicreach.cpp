@@ -397,7 +397,7 @@ int QUIC_CALL main(int argc, char **argv) {
 
     MsQuic = new (std::nothrow) MsQuicApi();
     if (QUIC_FAILED(MsQuic->GetInitStatus())) {
-        std::cout << "MsQuicApi failed, 0x" << std::hex << MsQuic->GetInitStatus() << std::dec << std::endl;
+        std::cout << "MsQuicApi failed, 0x" << MsQuic->GetInitStatus() << std::endl;
         return 1;
     }
 
