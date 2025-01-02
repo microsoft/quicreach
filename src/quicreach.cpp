@@ -25,8 +25,6 @@
 #define QUIC_CALL
 #endif
 
-using namespace std;
-
 const MsQuicApi* MsQuic;
 
 // TODO - Make these public?
@@ -65,37 +63,37 @@ struct ReachConfig {
 } Config;
 
 struct ReachResults {
-    atomic<uint32_t> TotalCount {0};
-    atomic<uint32_t> ReachableCount {0};
-    atomic<uint32_t> TooMuchCount {0};
-    atomic<uint32_t> WayTooMuchCount {0};
-    atomic<uint32_t> MultiRttCount {0};
-    atomic<uint32_t> RetryCount {0};
-    atomic<uint32_t> IPv6Count {0};
-    atomic<uint32_t> Quicv2Count {0};
+    std::atomic<uint32_t> TotalCount {0};
+    std::atomic<uint32_t> ReachableCount {0};
+    std::atomic<uint32_t> TooMuchCount {0};
+    std::atomic<uint32_t> WayTooMuchCount {0};
+    std::atomic<uint32_t> MultiRttCount {0};
+    std::atomic<uint32_t> RetryCount {0};
+    std::atomic<uint32_t> IPv6Count {0};
+    std::atomic<uint32_t> Quicv2Count {0};
     // Number of currently active connections.
     uint32_t ActiveCount {0};
     // Synchronization for active count.
-    mutex Mutex;
-    condition_variable NotifyEvent;
+    std::mutex Mutex;
+    std::condition_variable NotifyEvent;
     void WaitForActiveCount() {
         while (ActiveCount >= Config.Parallel) {
-            unique_lock<mutex> lock(Mutex);
+            std::unique_lock<std::mutex> lock(Mutex);
             NotifyEvent.wait(lock, [this]() { return ActiveCount < Config.Parallel; });
         }
     }
     void WaitForAll() {
         while (ActiveCount) {
-            unique_lock<mutex> lock(Mutex);
+            std::unique_lock<std::mutex> lock(Mutex);
             NotifyEvent.wait(lock, [this]() { return ActiveCount == 0; });
         }
     }
     void IncActive() {
-        lock_guard<mutex> lock(Mutex);
+        std::lock_guard<std::mutex> lock(Mutex);
         ++ActiveCount;
     }
     void DecActive() {
-        unique_lock<mutex> lock(Mutex);
+        std::unique_lock<std::mutex> lock(Mutex);
         ActiveCount--;
         NotifyEvent.notify_all();
     }
@@ -290,7 +288,7 @@ private:
                 '\0'};
             QUIC_ADDR_STR AddrStr;
             QuicAddrToString(&RemoteAddr.SockAddr, &AddrStr);
-            unique_lock<mutex> lock(Results.Mutex);
+            std::unique_lock<std::mutex> lock(Results.Mutex);
             printf("%30s   %3u.%03u ms   %3u.%03u ms   %3u.%03u ms   %u:%u %u:%u (%2.1fx)  %4u   %4u     %s   %20s   %s\n",
                 HostName,
                 Stats.Rtt / 1000, Stats.Rtt % 1000,
@@ -310,7 +308,7 @@ private:
     }
     void OnUnreachable() {
         if (Config.PrintStatistics) {
-            unique_lock<mutex> lock(Results.Mutex);
+            std::unique_lock<std::mutex> lock(Results.Mutex);
             printf("%30s\n", HostName);
         }
     }
