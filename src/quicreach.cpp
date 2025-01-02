@@ -10,7 +10,6 @@
 #define QUICREACH_VERSION_ONLY 1
 
 #include <stdio.h>
-#include <iostream>
 #include <thread>
 #include <vector>
 #include <mutex>
@@ -120,22 +119,23 @@ void AddHostName(char* arg) {
 
 bool ParseConfig(int argc, char **argv) {
     if (argc < 2 || !strcmp(argv[1], "-?") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
-        std::cout << "usage: quicreach <hostname(s)> [options...]\n"
-                  << " -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)\n"
-                  << " -b, --built-in-val     Use built-in TLS validation logic\n"
-                  << " -c, --csv <file>       Writes CSV results to the given file\n"
-                  << " -h, --help             Prints this help text\n"
-                  << " -i, --ip <address>     The IP address to use\n"
-                  << " -l, --parallel <num>   The numer of parallel hosts to test at once (def=1)\n"
-                  << " -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)\n"
-                  << " -p, --port <port>      The UDP port to use (def=443)\n"
-                  << " -r, --req-all          Require all hostnames to succeed\n"
-                  << " -R, --repeat <time>    Repeat the requests event N milliseconds\n"
-                  << " -s, --stats            Print connection statistics\n"
-                  << " -S, --source <address> Specify a source IP address\n"
-                  << " -t, --timeout <time>   Timeout in milliseconds to wait for each handshake\n"
-                  << " -u, --unsecure         Allows unsecure connections\n"
-                  << " -v, --version          Prints out the version\n";
+        printf("usage: quicreach <hostname(s)> [options...]\n"
+               " -a, --alpn <alpn>      The ALPN to use for the handshake (def=h3)\n"
+               " -b, --built-in-val     Use built-in TLS validation logic\n"
+               " -c, --csv <file>       Writes CSV results to the given file\n"
+               " -h, --help             Prints this help text\n"
+               " -i, --ip <address>     The IP address to use\n"
+               " -l, --parallel <num>   The numer of parallel hosts to test at once (def=1)\n"
+               " -m, --mtu <mtu>        The initial (IPv6) MTU to use (def=1288)\n"
+               " -p, --port <port>      The UDP port to use (def=443)\n"
+               " -r, --req-all          Require all hostnames to succeed\n"
+               " -R, --repeat <time>    Repeat the requests event N milliseconds\n"
+               " -s, --stats            Print connection statistics\n"
+               " -S, --source <address> Specify a source IP address\n"
+               " -t, --timeout <time>   Timeout in milliseconds to wait for each handshake\n"
+               " -u, --unsecure         Allows unsecure connections\n"
+               " -v, --version          Prints out the version\n"
+              );
         return false;
     }
 
@@ -144,59 +144,59 @@ bool ParseConfig(int argc, char **argv) {
             AddHostName(argv[i]);
 
         } else if (!strcmp(argv[i], "--alpn") || !strcmp(argv[i], "-a")) {
-            if (++i >= argc) { std::cout << "Missing ALPN string\n"; return false; }
+            if (++i >= argc) { printf("Missing ALPN string\n"); return false; }
             Config.Alpn = argv[i];
 
         } else if (!strcmp(argv[i], "--built-in-val") || !strcmp(argv[i], "-b")) {
             Config.CredFlags |= QUIC_CREDENTIAL_FLAG_USE_TLS_BUILTIN_CERTIFICATE_VALIDATION;
 
         } else if (!strcmp(argv[i], "--csv") || !strcmp(argv[i], "-c")) {
-            if (++i >= argc) { std::cout << "Missing file name\n"; return false; }
+            if (++i >= argc) { printf("Missing file name\n"); return false; }
             Config.OutCsvFile = argv[i];
 
         } else if (!strcmp(argv[i], "--mtu") || !strcmp(argv[i], "-m")) {
-            if (++i >= argc) { std::cout << "Missing MTU value\n"; return false; }
+            if (++i >= argc) { printf("Missing MTU value\n"); return false; }
             Config.Settings.SetMinimumMtu((uint16_t)atoi(argv[i]));
 
         } else if (!strcmp(argv[i], "--ip") || !strcmp(argv[i], "-i")) {
-            if (++i >= argc) { std::cout << "Missing IP address\n"; return false; }
+            if (++i >= argc) { printf("Missing IP address\n"); return false; }
             if (!QuicAddrFromString(argv[i], 0, &Config.Address.SockAddr)) {
-                std::cout << "Invalid address arg\n"; return false;
+                printf("Invalid address arg\n"); return false;
             }
 
         } else if (!strcmp(argv[i], "--parallel") || !strcmp(argv[i], "-l")) {
-            if (++i >= argc) { std::cout << "Missing parallel number\n"; return false; }
+            if (++i >= argc) { printf("Missing parallel number\n"); return false; }
             Config.Parallel = (uint32_t)atoi(argv[i]);
 
         } else if (!strcmp(argv[i], "--port") || !strcmp(argv[i], "-p")) {
-            if (++i >= argc) { std::cout << "Missing port number\n"; return false; }
+            if (++i >= argc) { printf("Missing port number\n"); return false; }
             Config.Port = (uint16_t)atoi(argv[i]);
 
         } else if (!strcmp(argv[i], "--stats") || !strcmp(argv[i], "-s")) {
             Config.PrintStatistics = true;
 
         } else if (!strcmp(argv[i], "--source") || !strcmp(argv[i], "-S")) {
-            if (++i >= argc) { std::cout << "Missing source address\n"; return false; }
+            if (++i >= argc) { printf("Missing source address\n"); return false; }
             if (!QuicAddrFromString(argv[i], 0, &Config.SourceAddress.SockAddr)) {
-                std::cout << "Invalid source address arg\n"; return false;
+                printf("Invalid source address arg\n"); return false;
             }
 
         } else if (!strcmp(argv[i], "--req-all") || !strcmp(argv[i], "-r")) {
             Config.RequireAll = true;
 
         } else if (!strcmp(argv[i], "--repeat") || !strcmp(argv[i], "-R")) {
-            if (++i >= argc) { std::cout << "Missing repeat arg\n"; return false; }
+            if (++i >= argc) { printf("Missing repeat arg\n"); return false; }
             Config.Repeat = (uint32_t)atoi(argv[i]);
 
         } else if (!strcmp(argv[i], "--timeout") || !strcmp(argv[i], "-t")) {
-            if (++i >= argc) { std::cout << "Missing timeout arg\n"; return false; }
+            if (++i >= argc) { printf("Missing timeout arg\n"); return false; }
             Config.Timeout = (uint32_t)atoi(argv[i]);
 
         } else if (!strcmp(argv[i], "--unsecure") || !strcmp(argv[i], "-u")) {
             Config.CredFlags |= QUIC_CREDENTIAL_FLAG_NO_CERTIFICATE_VALIDATION;
 
         } else if (!strcmp(argv[i], "--version") || !strcmp(argv[i], "-v")) {
-            std::cout << "quicreach " QUICREACH_VERSION "\n";
+            printf("quicreach " QUICREACH_VERSION "\n");
         }
     }
 
@@ -319,7 +319,7 @@ void DumpResultsToFile() {
     if (!File) {
         File = fopen(Config.OutCsvFile, "a"); // Open an existing file
         if (!File) {
-            std::cout << "Failed to open output file: " << Config.OutCsvFile << std::endl;;
+            printf("Failed to open output file: %s\n", Config.OutCsvFile);
             return;
         }
     } else {
@@ -333,7 +333,7 @@ void DumpResultsToFile() {
         Results.TotalCount.load(), Results.ReachableCount.load(), Results.TooMuchCount.load(), Results.MultiRttCount.load(),
         Results.RetryCount.load(), Results.IPv6Count.load(), Results.Quicv2Count.load(), Results.WayTooMuchCount.load());
     fclose(File);
-    std::cout << "\nOutput written to " << Config.OutCsvFile << std::endl;
+    printf("\nOutput written to %s\n", Config.OutCsvFile);
 }
 
 // TODO:
@@ -343,7 +343,7 @@ void DumpResultsToFile() {
 bool TestReachability() {
     MsQuicRegistration Registration("quicreach");
     MsQuicConfiguration Configuration(Registration, Config.Alpn, Config.Settings, MsQuicCredentialConfig(Config.CredFlags));
-    if (!Configuration.IsValid()) { std::cout << "Configuration initializtion failed!\n"; return false; }
+    if (!Configuration.IsValid()) { printf("Configuration initializtion failed!\n"); return false; }
     Configuration.SetVersionSettings(VersionSettings);
     Configuration.SetVersionNegotiationExtEnabled();
 
@@ -370,7 +370,7 @@ bool TestReachability() {
 
     if (Config.PrintStatistics) {
         if (Results.ReachableCount > 1) {
-            std::cout << std::endl;
+            printf("\n");
             printf("%4u domain(s) attempted\n", (uint32_t)Config.HostNames.size());
             printf("%4u domain(s) reachable\n", Results.ReachableCount.load());
             if (Results.MultiRttCount)
@@ -399,13 +399,13 @@ int QUIC_CALL main(int argc, char **argv) {
 
     MsQuic = new (std::nothrow) MsQuicApi();
     if (QUIC_FAILED(MsQuic->GetInitStatus())) {
-        std::cout << "MsQuicApi failed, 0x" << MsQuic->GetInitStatus() << std::endl;
+        printf("MsQuicApi failed, 0x%x\n", MsQuic->GetInitStatus());
         return 1;
     }
 
     bool Result = TestReachability();
     if (!Config.PrintStatistics) {
-        std::cout << (Result ? "Success" : "Failure") << std::endl;
+        printf("%s\n", Result ? "Success" : "Failure");
     }
     delete MsQuic;
     return Result ? 0 : 1;
