@@ -102,12 +102,12 @@ jobs:
         sarif_file: sarif-results/cpp.sarif
     - name: Upload SARIF to Artifacts
       if: ${{ (matrix.os == 'ubuntu') && (matrix.arch == 'x64') && (matrix.link == 'shared') }}
-      uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b
+      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
       with:
         name: sarif-results
         path: sarif-results
     - name: Upload
-      uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b
+      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
       with:
         name: bin-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.tls }}-${{ matrix.link }}
         path: |
