@@ -28,7 +28,7 @@ jobs:
     - name: Install
       run: cd build && sudo cmake --install . --config Debug
     - name: quicreach *
-      run: /usr/local/lib/quicreach '*' --parallel 8 --stats --csv build/data.csv
+      run: /usr/local/bin/quicreach '*' --parallel 8 --stats --csv build/data.csv
     - name: Save results
       if: github.event_name != 'pull_request'
       run: |
@@ -61,4 +61,4 @@ jobs:
       run: cd build && cmake --install . --config Debug
     - name: quicreach *
       run: |
-        & 'C:/Program Files/quicreach/lib/quicreach' '*' --parallel 8 --stats --csv build/data.csv
+        & 'C:/Program Files/quicreach/bin/quicreach' '*' --parallel 8 --stats --csv build/data.csv
