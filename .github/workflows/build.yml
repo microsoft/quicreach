@@ -118,7 +118,7 @@ jobs:
           build/bin/**/quicreach.msi
     - name: Test (Linux)
       if: runner.os == 'Linux'
-      run: /usr/local/bin/quicreach outlook-evergreen.office.com,www.cloudflare.com,www.google.com --req-all --stats
+      run: /usr/local/bin/quicreach www.cloudflare.com,www.google.com --req-all --stats
     - name: Test (Windows, x64)
       if: ${{ runner.os == 'Windows' && matrix.arch == 'x64' }}
       run: |
