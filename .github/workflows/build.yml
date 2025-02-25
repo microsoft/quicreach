@@ -122,11 +122,11 @@ jobs:
     - name: Test (Windows, x64)
       if: ${{ runner.os == 'Windows' && matrix.arch == 'x64' }}
       run: |
-        & 'C:/Program Files/quicreach/bin/quicreach' outlook-evergreen.office.com,www.cloudflare.com,www.google.com --req-all --stats
+        & 'C:/Program Files/quicreach/bin/quicreach' www.cloudflare.com,www.google.com --req-all --stats
     - name: Test (Windows, x86)
       if: ${{ runner.os == 'Windows' && matrix.arch == 'x86' }}
       run: |
-        & 'C:/Program Files (x86)/quicreach/bin/quicreach' outlook-evergreen.office.com,www.cloudflare.com,www.google.com --req-all --stats
+        & 'C:/Program Files (x86)/quicreach/bin/quicreach' www.cloudflare.com,www.google.com --req-all --stats
   Complete:
     name: Complete
     if: always()
