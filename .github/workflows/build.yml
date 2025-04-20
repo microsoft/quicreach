@@ -9,16 +9,6 @@ on:
 permissions: read-all
 
 jobs:
-  dependabot-merge:
-    name: Merge Dependabot
-    runs-on: ubuntu-latest
-    needs: []
-    steps:
-    - uses: ahmadnassri/action-dependabot-auto-merge@45fc124d949b19b6b8bf6645b6c9d55f4f9ac61a
-      if: ${{ github.event_name == 'pull_request' }}
-      with:
-        target: minor
-        github-token: ${{ secrets.GITHUB_TOKEN }}
   build:
     strategy:
       fail-fast: false
