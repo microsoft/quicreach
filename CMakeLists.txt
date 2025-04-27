@@ -40,9 +40,9 @@ endif()
 
 # Configure and build msquic dependency.
 if (WIN32)
-    set(QUIC_TLS "schannel" CACHE STRING "TLS Library to use")
+    set(QUIC_TLS_LIB "schannel" CACHE STRING "TLS Library to use")
 else()
-    set(QUIC_TLS "openssl" CACHE STRING "TLS Library to use")
+    set(QUIC_TLS_LIB "quictls" CACHE STRING "TLS Library to use")
 endif()
 set(QUIC_BUILD_SHARED ON CACHE BOOL "Builds MsQuic as a dynamic library")
 set(QUIC_ENABLE_LOGGING ON CACHE BOOL "Enable MsQuic logging")
