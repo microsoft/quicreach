@@ -8,7 +8,7 @@ param (
     [string]$Config = "Release",
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet("schannel", "openssl")]
+    [ValidateSet("schannel", "quictls")]
     [string]$Tls = "schannel",
 
     [Parameter(Mandatory = $false)]
@@ -50,4 +50,4 @@ if ($_Arch -eq "x86") { $_Arch = "Win32" }
 $Shared = "off"
 if ($Link -ne "static") { $Shared = "on" }
 
-Execute "cmake" "-G ""Visual Studio 17 2022"" -A $_Arch -DREACH_ARCH=$_Arch -DREACH_ONEBRANCH=on -DQUIC_TLS=$Tls -DQUIC_BUILD_SHARED=$Shared .."
+Execute "cmake" "-G ""Visual Studio 17 2022"" -A $_Arch -DREACH_ARCH=$_Arch -DREACH_ONEBRANCH=on -DQUIC_TLS_LIB=$Tls -DQUIC_BUILD_SHARED=$Shared .."
