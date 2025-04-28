@@ -54,7 +54,7 @@ jobs:
         fetch-depth: 0
         submodules: 'recursive'
     - name: Generate
-      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_TLS_LIB=quictls ..
+      run: mkdir build && cd build && cmake -G 'Visual Studio 17 2022' -A x64 -DQUIC_TLS_LIB=schannel ..
     - name: Build
       run: cd build && cmake --build . --config Debug
     - name: Install
