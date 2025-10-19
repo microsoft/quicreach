@@ -54,7 +54,7 @@ jobs:
       run: sudo apt-get install -y libnuma-dev
     - name: Initialize CodeQL
       if: ${{ (matrix.os == 'ubuntu') && (matrix.arch == 'x64') && (matrix.link == 'shared') }}
-      uses: github/codeql-action/init@f443b600d91635bebf5b0d9ebc620189c0d6fba5
+      uses: github/codeql-action/init@16140ae1a102900babc80a33c44059580f687047
       with:
         languages: c-cpp
         build-mode: manual
@@ -71,7 +71,7 @@ jobs:
       run: ./build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }} -Install -BuildInstaller -Debug
     - name: Perform CodeQL Analysis
       if: ${{ (matrix.os == 'ubuntu') && (matrix.arch == 'x64') && (matrix.link == 'shared') }}
-      uses: github/codeql-action/analyze@f443b600d91635bebf5b0d9ebc620189c0d6fba5
+      uses: github/codeql-action/analyze@16140ae1a102900babc80a33c44059580f687047
       with:
         category: "/language:c-cpp"
         output: sarif-results
@@ -87,7 +87,7 @@ jobs:
         output: sarif-results/cpp.sarif
     - name: Upload SARIF
       if: ${{ (matrix.os == 'ubuntu') && (matrix.arch == 'x64') && (matrix.link == 'shared') }}
-      uses: github/codeql-action/upload-sarif@f443b600d91635bebf5b0d9ebc620189c0d6fba5
+      uses: github/codeql-action/upload-sarif@16140ae1a102900babc80a33c44059580f687047
       with:
         sarif_file: sarif-results/cpp.sarif
     - name: Upload SARIF to Artifacts
