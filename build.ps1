@@ -53,7 +53,7 @@ if ($IsWindows) {
 
     $_Arch = $Arch
     if ($_Arch -eq "x86") { $_Arch = "Win32" }
-    Execute "cmake" "-G ""Visual Studio 17 2022"" -A $_Arch -DREACH_ARCH=$Arch -DQUIC_TLS_LIB=$Tls -DQUIC_BUILD_SHARED=$Shared .."
+    Execute "cmake" "-G ""Visual Studio 18 2026"" -A $_Arch -DREACH_ARCH=$Arch -DQUIC_TLS_LIB=$Tls -DQUIC_BUILD_SHARED=$Shared .."
     Execute "cmake" "--build . --config $Config"
 
     if ($BuildInstaller) {
