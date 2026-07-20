@@ -49,7 +49,7 @@ jobs:
       run: sudo apt-get install -y libnuma-dev
     - name: Initialize CodeQL
       if: ${{ (matrix.os == 'ubuntu') && (matrix.arch == 'x64') && (matrix.link == 'shared') }}
-      uses: github/codeql-action/init@99df26d4f13ea111d4ec1a7dddef6063f76b97e9
+      uses: github/codeql-action/init@7188fc363630916deb702c7fdcf4e481b751f97a
       with:
         languages: c-cpp
         build-mode: manual
@@ -66,7 +66,7 @@ jobs:
       run: ./build.ps1 -Arch ${{ matrix.arch }} -Tls ${{ matrix.tls }} -Link ${{ matrix.link }} -Install -BuildInstaller -Debug
     - name: Perform CodeQL Analysis
       if: ${{ (matrix.os == 'ubuntu') && (matrix.arch == 'x64') && (matrix.link == 'shared') }}
-      uses: github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9
+      uses: github/codeql-action/analyze@7188fc363630916deb702c7fdcf4e481b751f97a
       with:
         category: "/language:c-cpp"
         output: sarif-results
